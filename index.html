@@ -999,9 +999,9 @@ function screenHeaderHTML(){
 }
 
 function venueInfoHTML(){
-  const address = VENUE.address || 'Plaza Félix Estévez, 3, 35660 Corralejo, Las Palmas';
-  const hours = VENUE.hours || '—';
-  const phone = VENUE.phone || 'da aggiungere';
+  const address = VENUE.address ? tr(VENUE.address) : 'Plaza Félix Estévez, 3, 35660 Corralejo, Las Palmas';
+  const hours = VENUE.hours ? tr(VENUE.hours) : '—';
+  const phone = VENUE.phone ? tr(VENUE.phone) : 'da aggiungere';
   return `
     <div class="venue-info">
       <div class="info-col">
