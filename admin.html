@@ -82,6 +82,16 @@
   .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--ink); color:white; padding:12px 22px; border-radius:999px; font-size:0.85rem; z-index:100; opacity:0; pointer-events:none; transition:opacity .3s ease;}
   .toast.show{opacity:1;}
   .toast.error{background:var(--danger);}
+
+  .modal-overlay-generic{
+    position:fixed; inset:0; background:rgba(11,61,92,0.4); z-index:200;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-box{
+    background:var(--white); border-radius:16px; padding:28px;
+    width:100%; max-width:420px; box-shadow:0 20px 50px rgba(0,0,0,0.25);
+  }
+  .modal-error{color:var(--danger); font-size:0.82rem; min-height:16px; margin-top:6px;}
   .section-title{font-size:1.5rem; margin:28px 0 14px;}
   .section-title:first-child{margin-top:0;}
   .empty{color:var(--ink-soft); font-style:italic; text-align:center; padding:30px;}
@@ -116,6 +126,61 @@ function showToast(msg, isError){
   t.textContent = msg;
   t.className = 'toast show' + (isError ? ' error' : '');
   setTimeout(()=>{ t.className = 'toast'; }, 2800);
+}
+
+/* ========================================================================
+   MODALI PERSONALIZZATE (al posto di prompt/confirm/alert nativi del browser)
+   ======================================================================== */
+function closeGenericModal(){
+  const el = document.getElementById('genericModalOverlay');
+  if(el) el.remove();
+}
+
+function showConfirmModal(message, onConfirm){
+  closeGenericModal();
+  const ov = document.createElement('div');
+  ov.id = 'genericModalOverlay';
+  ov.className = 'modal-overlay-generic';
+  ov.innerHTML = `
+    <div class="modal-box">
+      <p style="margin:0 0 22px; font-size:0.95rem; color:var(--ink); line-height:1.5;">${message}</p>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn btn-outline btn-small" onclick="closeGenericModal()">Annulla</button>
+        <button class="btn btn-danger btn-small" id="genericModalConfirmBtn" style="border:none; background:var(--danger); color:#fff;">Conferma</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(ov);
+  document.getElementById('genericModalConfirmBtn').onclick = ()=>{ closeGenericModal(); onConfirm(); };
+}
+
+function showPromptModal(title, fields, onSubmit, submitLabel){
+  closeGenericModal();
+  const ov = document.createElement('div');
+  ov.id = 'genericModalOverlay';
+  ov.className = 'modal-overlay-generic';
+  ov.innerHTML = `
+    <div class="modal-box">
+      <h3 style="margin:0 0 16px; font-size:1.3rem;">${title}</h3>
+      ${fields.map(f=>`
+        <div class="field">
+          <label>${f.label}</label>
+          <input type="text" id="${f.id}" placeholder="${f.placeholder||''}" value="${f.value||''}">
+        </div>
+      `).join('')}
+      <div class="modal-error" id="genericModalError"></div>
+      <div class="row" style="justify-content:flex-end; margin-top:6px;">
+        <button class="btn btn-outline btn-small" onclick="closeGenericModal()">Annulla</button>
+        <button class="btn btn-primary btn-small" id="genericModalSubmitBtn">${submitLabel||'Salva'}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(ov);
+  document.getElementById('genericModalSubmitBtn').onclick = ()=>{
+    const values = {};
+    fields.forEach(f=> values[f.id] = document.getElementById(f.id).value.trim());
+    onSubmit(values);
+  };
 }
 
 /* ========================================================================
@@ -219,17 +284,23 @@ async function doSignup(){
 }
 
 async function doForgotPassword(){
-  const email = prompt('Inserisci la tua email: ti manderemo un link per reimpostare la password.');
-  if(!email) return;
-  const errEl = document.getElementById('loginError');
-  errEl.style.color = '';
-  errEl.textContent = 'Invio in corso…';
-  const { error } = await sb.auth.resetPasswordForEmail(email.trim(), {
-    redirectTo: 'https://gustavo-amor.github.io/Gustavo.menu/admin.html'
-  });
-  if(error){ errEl.textContent = 'Errore: ' + error.message; return; }
-  errEl.style.color = 'var(--success)';
-  errEl.textContent = 'Controlla la tua email: ti abbiamo mandato un link per reimpostare la password.';
+  showPromptModal('Password dimenticata', [
+    {id:'fp_email', label:'La tua email', placeholder:'tuo@email.com'}
+  ], async (values)=>{
+    const email = values.fp_email;
+    const errModal = document.getElementById('genericModalError');
+    if(!email){ errModal.textContent = 'Inserisci un\'email valida.'; return; }
+    errModal.style.color = '';
+    errModal.textContent = 'Invio in corso…';
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://gustavo-amor.github.io/Gustavo.menu/admin.html'
+    });
+    if(error){ errModal.textContent = 'Errore: ' + error.message; return; }
+    closeGenericModal();
+    const errEl = document.getElementById('loginError');
+    errEl.style.color = 'var(--success)';
+    errEl.textContent = 'Controlla la tua email: ti abbiamo mandato un link per reimpostare la password.';
+  }, 'Invia link');
 }
 
 function renderResetPassword(){
@@ -485,12 +556,13 @@ async function uploadItemPhoto(file){
 }
 
 async function deleteItem(id){
-  if(!confirm('Eliminare definitivamente questa voce?')) return;
-  const { error } = await sb.from('menu_items').delete().eq('id', id);
-  if(error){ showToast('Errore: ' + error.message, true); return; }
-  showToast('Voce eliminata');
-  await loadAll();
-  renderTabContent();
+  showConfirmModal('Eliminare definitivamente questa voce?', async ()=>{
+    const { error } = await sb.from('menu_items').delete().eq('id', id);
+    if(error){ showToast('Errore: ' + error.message, true); return; }
+    showToast('Voce eliminata');
+    await loadAll();
+    renderTabContent();
+  });
 }
 
 function renderCategoriesTab(){
@@ -534,44 +606,53 @@ async function renameCategory(id, value){
 }
 
 async function deleteCategory(id){
-  if(!confirm('Eliminare questa categoria? Verranno eliminati anche tutti i piatti e le sottocategorie al suo interno.')) return;
-  await sb.from('menu_items').delete().eq('category_id', id);
-  await sb.from('subcategories').delete().eq('category_id', id);
-  const { error } = await sb.from('categories').delete().eq('id', id);
-  if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast('Categoria eliminata');
-  await loadAll();
-  renderTabContent();
+  showConfirmModal('Eliminare questa categoria? Verranno eliminati anche tutti i piatti e le sottocategorie al suo interno.', async ()=>{
+    await sb.from('menu_items').delete().eq('category_id', id);
+    await sb.from('subcategories').delete().eq('category_id', id);
+    const { error } = await sb.from('categories').delete().eq('id', id);
+    if(error){ showToast('Errore: '+error.message, true); return; }
+    showToast('Categoria eliminata');
+    await loadAll();
+    renderTabContent();
+  });
 }
 
 async function addCategory(){
-  const key = prompt('Chiave interna della categoria (es. "antipasti", senza spazi):');
-  if(!key) return;
-  const label = prompt('Nome da mostrare (in italiano):');
-  if(!label) return;
-  const title = {it:label,en:'',es:'',de:'',fr:''};
-  showToast('Traduzione automatica in corso…');
-  await autoTranslateObj({title}, ['title']);
-  const { error } = await sb.from('categories').insert({key, title, icon:'tapas', sort_order:(categories.length+1)*10});
-  if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast('Categoria creata e tradotta automaticamente');
-  await loadAll();
-  renderTabContent();
+  showPromptModal('Nuova categoria', [
+    {id:'nc_key', label:'Chiave interna (es. "antipasti", senza spazi)'},
+    {id:'nc_label', label:'Nome da mostrare (in italiano)'}
+  ], async (values)=>{
+    const errModal = document.getElementById('genericModalError');
+    if(!values.nc_key || !values.nc_label){ errModal.textContent = 'Compila entrambi i campi.'; return; }
+    closeGenericModal();
+    const title = {it:values.nc_label,en:'',es:'',de:'',fr:''};
+    showToast('Traduzione automatica in corso…');
+    await autoTranslateObj({title}, ['title']);
+    const { error } = await sb.from('categories').insert({key:values.nc_key, title, icon:'tapas', sort_order:(categories.length+1)*10});
+    if(error){ showToast('Errore: '+error.message, true); return; }
+    showToast('Categoria creata e tradotta automaticamente');
+    await loadAll();
+    renderTabContent();
+  }, 'Crea');
 }
 
 async function addSubcategory(catId){
-  const key = prompt('Chiave interna della sottocategoria:');
-  if(!key) return;
-  const label = prompt('Nome da mostrare (in italiano):');
-  if(!label) return;
-  const title = {it:label,en:'',es:'',de:'',fr:''};
-  showToast('Traduzione automatica in corso…');
-  await autoTranslateObj({title}, ['title']);
-  const { error } = await sb.from('subcategories').insert({category_id:catId, key, title, sort_order:(subcategories.length+1)*10});
-  if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast('Sottocategoria creata e tradotta automaticamente');
-  await loadAll();
-  renderTabContent();
+  showPromptModal('Nuova sottocategoria', [
+    {id:'ns_key', label:'Chiave interna (senza spazi)'},
+    {id:'ns_label', label:'Nome da mostrare (in italiano)'}
+  ], async (values)=>{
+    const errModal = document.getElementById('genericModalError');
+    if(!values.ns_key || !values.ns_label){ errModal.textContent = 'Compila entrambi i campi.'; return; }
+    closeGenericModal();
+    const title = {it:values.ns_label,en:'',es:'',de:'',fr:''};
+    showToast('Traduzione automatica in corso…');
+    await autoTranslateObj({title}, ['title']);
+    const { error } = await sb.from('subcategories').insert({category_id:catId, key:values.ns_key, title, sort_order:(subcategories.length+1)*10});
+    if(error){ showToast('Errore: '+error.message, true); return; }
+    showToast('Sottocategoria creata e tradotta automaticamente');
+    await loadAll();
+    renderTabContent();
+  }, 'Crea');
 }
 
 async function renameSubcategory(id, value){
@@ -588,13 +669,14 @@ async function renameSubcategory(id, value){
 }
 
 async function deleteSubcategory(id){
-  if(!confirm('Eliminare questa sottocategoria e tutti i suoi piatti?')) return;
-  await sb.from('menu_items').delete().eq('subcategory_id', id);
-  const { error } = await sb.from('subcategories').delete().eq('id', id);
-  if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast('Sottocategoria eliminata');
-  await loadAll();
-  renderTabContent();
+  showConfirmModal('Eliminare questa sottocategoria e tutti i suoi piatti?', async ()=>{
+    await sb.from('menu_items').delete().eq('subcategory_id', id);
+    const { error } = await sb.from('subcategories').delete().eq('id', id);
+    if(error){ showToast('Errore: '+error.message, true); return; }
+    showToast('Sottocategoria eliminata');
+    await loadAll();
+    renderTabContent();
+  });
 }
 
 function renderVenueTab(){
@@ -651,12 +733,13 @@ function renderReviewsTab(){
 }
 
 async function deleteReview(id){
-  if(!confirm('Eliminare questa recensione?')) return;
-  const { error } = await sb.from('reviews').delete().eq('id', id);
-  if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast('Recensione eliminata');
-  await loadAll();
-  renderTabContent();
+  showConfirmModal('Eliminare questa recensione?', async ()=>{
+    const { error } = await sb.from('reviews').delete().eq('id', id);
+    if(error){ showToast('Errore: '+error.message, true); return; }
+    showToast('Recensione eliminata');
+    await loadAll();
+    renderTabContent();
+  });
 }
 
 init();
