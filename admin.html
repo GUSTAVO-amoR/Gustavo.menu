@@ -102,7 +102,8 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const LANGS = ["it","en","es","de","fr"];
 const LANG_LABEL = { it:"IT", en:"EN", es:"ES", de:"DE", fr:"FR" };
-const ALLERGENS = ["gluten","lattosio","frutta a guscio","uova","pesce","solfiti"];
+const ALLERGENS = ["gluten","lattosio","frutta a guscio","uova","pesce","crostacei","molluschi","solfiti","arachidi","soia","sedano","senape","sesamo","lupini"];
+const ALLERGEN_LABELS_IT = { gluten:"Glutine", lattosio:"Latte/Lattosio", "frutta a guscio":"Frutta a guscio", uova:"Uova", pesce:"Pesce", crostacei:"Crostacei", molluschi:"Molluschi", solfiti:"Solfiti", arachidi:"Arachidi", soia:"Soia", sedano:"Sedano", senape:"Senape", sesamo:"Sesamo", lupini:"Lupini" };
 
 let session = null;
 let categories = [], subcategories = [], menuItems = [], venueInfo = null, reviews = [];
@@ -115,6 +116,38 @@ function showToast(msg, isError){
   t.textContent = msg;
   t.className = 'toast show' + (isError ? ' error' : '');
   setTimeout(()=>{ t.className = 'toast'; }, 2800);
+}
+
+/* ========================================================================
+   TRADUZIONE AUTOMATICA (IT -> EN/ES/DE/FR)
+   ---------------------------------------------------------------------
+   Usa un servizio di traduzione automatica gratuito (MyMemory). E' un
+   aiuto per non lasciare campi vuoti, ma resta una traduzione automatica:
+   ricontrolla sempre i nomi propri dei piatti (es. "Negroni", "Mojito")
+   che non andrebbero tradotti - puoi sempre correggerli a mano aprendo
+   la lingua giusta.
+   ======================================================================== */
+async function translateFromIt(text, targetLang){
+  if(!text || !text.trim()) return '';
+  try{
+    const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=it|${targetLang}`);
+    const data = await res.json();
+    return (data && data.responseData && data.responseData.translatedText) ? data.responseData.translatedText : text;
+  }catch(e){
+    console.error('Errore traduzione', e);
+    return text;
+  }
+}
+
+async function autoTranslateObj(obj, fieldNames){
+  const targets = ['en','es','de','fr'];
+  for(const field of fieldNames){
+    const itText = obj[field] ? obj[field].it : '';
+    if(!itText) continue;
+    for(const lang of targets){
+      obj[field][lang] = await translateFromIt(itText, lang);
+    }
+  }
 }
 
 async function init(){
@@ -368,7 +401,7 @@ function openItemForm(itemId, catId, subId){
       </div>
       <div class="field">
         <label>Allergeni</label>
-        <div>${ALLERGENS.map(a=>`<label class="allergen-check"><input type="checkbox" value="${a}" ${it.allergens&&it.allergens.includes(a)?'checked':''} class="allergen-cb"> ${a}</label>`).join('')}</div>
+        <div>${ALLERGENS.map(a=>`<label class="allergen-check"><input type="checkbox" value="${a}" ${it.allergens&&it.allergens.includes(a)?'checked':''} class="allergen-cb"> ${ALLERGEN_LABELS_IT[a]}</label>`).join('')}</div>
       </div>
       <div class="field">
         <label>Foto piatto</label>
@@ -392,6 +425,11 @@ async function saveItem(itemId, catId, subId){
   it.price = document.getElementById('f_price').value.trim();
   it.recommended = document.getElementById('f_recommended').checked;
   it.allergens = [...document.querySelectorAll('.allergen-cb:checked')].map(c=>c.value);
+
+  if(editLang === 'it'){
+    showToast('Traduzione automatica in corso…');
+    await autoTranslateObj(it, ['name','ingredients']);
+  }
 
   const photoInput = document.getElementById('f_photo');
   let photo_url = it.photo_url || null;
@@ -485,6 +523,10 @@ function renderCategoriesTab(){
 async function renameCategory(id, value){
   const cat = categories.find(c=>c.id===id);
   cat.title[editLang] = value;
+  if(editLang === 'it'){
+    showToast('Traduzione automatica in corso…');
+    await autoTranslateObj(cat, ['title']);
+  }
   const { error } = await sb.from('categories').update({title:cat.title}).eq('id', id);
   if(error){ showToast('Errore: '+error.message, true); return; }
   showToast('Categoria aggiornata');
@@ -507,10 +549,12 @@ async function addCategory(){
   if(!key) return;
   const label = prompt('Nome da mostrare (in italiano):');
   if(!label) return;
-  const title = {it:label,en:label,es:label,de:label,fr:label};
+  const title = {it:label,en:'',es:'',de:'',fr:''};
+  showToast('Traduzione automatica in corso…');
+  await autoTranslateObj({title}, ['title']);
   const { error } = await sb.from('categories').insert({key, title, icon:'tapas', sort_order:(categories.length+1)*10});
   if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast('Categoria creata — ricorda di tradurla nelle altre lingue');
+  showToast('Categoria creata e tradotta automaticamente');
   await loadAll();
   renderTabContent();
 }
@@ -520,10 +564,12 @@ async function addSubcategory(catId){
   if(!key) return;
   const label = prompt('Nome da mostrare (in italiano):');
   if(!label) return;
-  const title = {it:label,en:label,es:label,de:label,fr:label};
+  const title = {it:label,en:'',es:'',de:'',fr:''};
+  showToast('Traduzione automatica in corso…');
+  await autoTranslateObj({title}, ['title']);
   const { error } = await sb.from('subcategories').insert({category_id:catId, key, title, sort_order:(subcategories.length+1)*10});
   if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast('Sottocategoria creata');
+  showToast('Sottocategoria creata e tradotta automaticamente');
   await loadAll();
   renderTabContent();
 }
@@ -531,6 +577,10 @@ async function addSubcategory(catId){
 async function renameSubcategory(id, value){
   const sub = subcategories.find(s=>s.id===id);
   sub.title[editLang] = value;
+  if(editLang === 'it'){
+    showToast('Traduzione automatica in corso…');
+    await autoTranslateObj(sub, ['title']);
+  }
   const { error } = await sb.from('subcategories').update({title:sub.title}).eq('id', id);
   if(error){ showToast('Errore: '+error.message, true); return; }
   showToast('Sottocategoria aggiornata');
@@ -569,6 +619,13 @@ async function saveVenue(){
   address[editLang] = document.getElementById('v_address').value.trim();
   hours[editLang] = document.getElementById('v_hours').value.trim();
   phone[editLang] = document.getElementById('v_phone').value.trim();
+  if(editLang === 'it'){
+    showToast('Aggiornamento in corso…');
+    // L'indirizzo NON va tradotto (è un nome proprio/via) - si copia identico
+    ['en','es','de','fr'].forEach(l=> address[l] = address.it);
+    const wrapper = { hours, phone };
+    await autoTranslateObj(wrapper, ['hours','phone']);
+  }
   const { error } = await sb.from('venue_info').update({address, hours, phone}).eq('id',1);
   if(error){ showToast('Errore: '+error.message, true); return; }
   showToast('Info locale aggiornate');
