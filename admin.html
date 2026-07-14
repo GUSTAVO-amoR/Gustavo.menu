@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gustavo — Gestione Menu</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --ink:#0b3d5c; --ink-soft:#2f5c7a; --celeste:#bfe6f5; --celeste-soft:#e3f4fa;
+    --white:#fbfeff; --line:rgba(11,61,92,0.18); --danger:#b3261e; --danger-soft:#fdeceb;
+    --shadow:0 8px 24px rgba(11,61,92,0.10);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Jost',sans-serif; background:linear-gradient(180deg,var(--white) 0%,var(--celeste-soft) 100%); color:var(--ink); min-height:100vh;}
+  h1,h2,h3{font-family:'Cormorant Garamond',serif; margin:0;}
+  #app{max-width:960px; margin:0 auto; padding:22px 18px 80px;}
+
+  /* ---- auth ---- */
+  .auth-wrap{min-height:80vh; display:flex; align-items:center; justify-content:center;}
+  .auth-card{
+    background:var(--white); border:1px solid var(--line); border-radius:18px;
+    padding:36px 32px; width:100%; max-width:380px; box-shadow:var(--shadow); text-align:center;
+  }
+  .auth-card h1{font-size:1.9rem; margin-bottom:4px;}
+  .auth-card p.sub{font-size:0.82rem; color:var(--ink-soft); margin:0 0 22px;}
+  .field{text-align:left; margin-bottom:14px;}
+  .field label{display:block; font-size:0.72rem; letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); margin-bottom:5px;}
+  input[type=text], input[type=email], input[type=password], input[type=number], textarea, select{
+    width:100%; font-family:'Jost'; font-size:0.92rem; color:var(--ink);
+    background:var(--white); border:1px solid var(--line); border-radius:9px;
+    padding:10px 12px; outline:none;
+  }
+  input:focus, textarea:focus, select:focus{border-color:var(--ink-soft);}
+  textarea{resize:vertical;}
+  .btn{
+    font-family:'Jost'; font-weight:600; font-size:0.85rem; letter-spacing:0.5px;
+    padding:11px 20px; border-radius:999px; border:none; cursor:pointer;
+    background:var(--ink); color:var(--white); transition:background .2s;
+  }
+  .btn:hover{background:var(--ink-soft);}
+  .btn.secondary{background:transparent; color:var(--ink); border:1px solid var(--ink-soft);}
+  .btn.danger{background:var(--danger); color:#fff;}
+  .btn.small{padding:6px 14px; font-size:0.75rem;}
+  .btn:disabled{opacity:0.5; cursor:default;}
+  .btn-row{display:flex; gap:10px; margin-top:8px; flex-wrap:wrap;}
+  .full-w{width:100%;}
+  .msg{font-size:0.82rem; margin:10px 0; min-height:18px;}
+  .msg.error{color:var(--danger);}
+  .msg.ok{color:#1b7a3d;}
+
+  /* ---- topbar / tabs ---- */
+  .topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
+  .topbar h1{font-size:1.5rem;}
+  .topbar .who{font-size:0.72rem; color:var(--ink-soft); display:block; margin-top:2px;}
+  .tabs{display:flex; gap:8px; margin-bottom:22px; flex-wrap:wrap;}
+  .tab{
+    font-family:'Jost'; font-weight:600; font-size:0.85rem;
+    padding:9px 18px; border-radius:999px; border:1px solid var(--ink-soft);
+    background:var(--white); color:var(--ink-soft); cursor:pointer;
+  }
+  .tab.active{background:var(--ink); color:var(--white); border-color:var(--ink);}
+
+  /* ---- cards / lists ---- */
+  .panel{background:var(--white); border:1px solid var(--line); border-radius:16px; padding:20px; margin-bottom:20px; box-shadow:var(--shadow);}
+  .panel-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px;}
+  .panel-head h2{font-size:1.3rem;}
+  .row-item{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:12px 0; border-bottom:1px dashed var(--line);
+  }
+  .row-item:last-child{border-bottom:none;}
+  .row-main{min-width:0;}
+  .row-title{font-family:'Cormorant Garamond',serif; font-weight:700; font-size:1.1rem;}
+  .row-sub{font-size:0.78rem; color:var(--ink-soft);}
+  .row-actions{display:flex; gap:6px; flex-shrink:0;}
+  .badge{
+    display:inline-block; font-size:0.62rem; font-weight:700; letter-spacing:0.5px;
+    background:#c9782f; color:#fff; padding:2px 7px; border-radius:999px; margin-left:6px; vertical-align:middle;
+  }
+  .empty{color:var(--ink-soft); font-style:italic; font-family:'Cormorant Garamond',serif; font-size:1rem; padding:14px 0;}
+
+  /* ---- forms / modal ---- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(11,61,92,0.35); z-index:100;
+    display:flex; align-items:flex-start; justify-content:center; padding:30px 14px; overflow-y:auto;
+  }
+  .modal{background:var(--white); border-radius:16px; padding:26px; width:100%; max-width:560px; box-shadow:0 20px 50px rgba(0,0,0,0.25);}
+  .modal h3{font-size:1.4rem; margin-bottom:16px;}
+  .lang-group{border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:12px;}
+  .lang-group .lang-tag{font-size:0.68rem; letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); font-weight:700; margin-bottom:6px;}
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .allergen-list{display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;}
+  .allergen-chip{
+    display:flex; align-items:center; gap:5px; font-size:0.78rem;
+    border:1px solid var(--line); border-radius:999px; padding:6px 12px; cursor:pointer;
+  }
+  .allergen-chip input{width:auto;}
+  .photo-preview{margin-top:8px;}
+  .photo-preview img{max-width:160px; border-radius:10px; display:block;}
+  .close-x{
+    position:absolute; top:14px; right:16px; background:none; border:none;
+    font-size:1.3rem; cursor:pointer; color:var(--ink-soft); line-height:1;
+  }
+  .modal{position:relative;}
+  select#itemCategorySelect, select#itemSubcategorySelect{margin-bottom:10px;}
+</style>
+</head>
+<body>
+<div id="app"><div id="root"></div></div>
+
+<script>
+const SUPABASE_URL = "https://eirqridakadiwxzfctih.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpcnFyaWRha2FkaXd4emZjdGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4Njg1MzUsImV4cCI6MjA5OTQ0NDUzNX0.m403t9H_kfEcra5Xep8iurQ5QuFMv1vfA-s3o8dEsSA";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const LANGS = ["it","en","es","de","fr"];
+const LANG_LABELS = { it:"Italiano", en:"English", es:"Español", de:"Deutsch", fr:"Français" };
+const ALLERGEN_OPTIONS = ["gluten","lattosio","frutta a guscio","uova","pesce","solfiti"];
+const ALLERGEN_LABELS = { gluten:"Glutine", lattosio:"Lattosio", "frutta a guscio":"Frutta a guscio", uova:"Uova", pesce:"Pesce/Crostacei", solfiti:"Solfiti" };
+const ICON_OPTIONS = ["tapas","drink","vini","birre","caffetteria","raciones","postres","recensioni"];
+
+const root = document.getElementById('root');
+let session = null;
+let activeTab = 'categorie';
+let categories = [];
+let subcategories = [];
+let pendingPhotoBlob = null;
+
+function esc(s){ const d=document.createElement('div'); d.textContent = (s==null?'':s); return d.innerHTML; }
+function emptyLangObj(){ const o={}; LANGS.forEach(l=>o[l]=''); return o; }
+
+/* ========================================================================
+   AUTH
+   ======================================================================== */
+async function initAuth(){
+  const { data:{ session:s } } = await sb.auth.getSession();
+  session = s;
+  sb.auth.onAuthStateChange((_evt, s2)=>{ session = s2; render(); });
+  render();
+}
+
+function render(){
+  if(!session){ renderAuth(); } else { renderDashboard(); }
+}
+
+function renderAuth(){
+  root.innerHTML = `
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <h1>Gustavo</h1>
+        <p class="sub">Gestione menu — area riservata</p>
+        <div class="field"><label>Email</label><input id="authEmail" type="email" autocomplete="username"></div>
+        <div class="field"><label>Password</label><input id="authPassword" type="password" autocomplete="current-password"></div>
+        <div class="msg" id="authMsg"></div>
+        <div class="btn-row">
+          <button class="btn full-w" onclick="doLogin()">Accedi</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn secondary full-w" onclick="doSignup()">Crea il tuo account</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function doLogin(){
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const msg = document.getElementById('authMsg');
+  msg.className = 'msg'; msg.textContent = 'Accesso in corso…';
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){ msg.className='msg error'; msg.textContent = 'Non riesco ad accedere: ' + error.message; }
+}
+
+async function doSignup(){
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const msg = document.getElementById('authMsg');
+  if(!email || password.length < 6){
+    msg.className='msg error'; msg.textContent = 'Inserisci email e una password di almeno 6 caratteri.'; return;
+  }
+  msg.className='msg'; msg.textContent = 'Creazione account…';
+  const { error } = await sb.auth.signUp({ email, password });
+  if(error){ msg.className='msg error'; msg.textContent = 'Errore: ' + error.message; }
+  else { msg.className='msg ok'; msg.textContent = 'Account creato. Se ti viene chiesta una conferma via email, controlla la posta; altrimenti prova subito ad "Accedi".'; }
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+}
+
+/* ========================================================================
+   DASHBOARD SHELL
+   ======================================================================== */
+async function renderDashboard(){
+  root.innerHTML = `
+    <div class="topbar">
+      <div><h1>Gustavo — Gestione Menu</h1><span class="who">Connesso come ${esc(session.user.email)}</span></div>
+      <button class="btn secondary small" onclick="doLogout()">Esci</button>
+    </div>
+    <div class="tabs">
+      <button class="tab ${activeTab==='categorie'?'active':''}" onclick="setTab('categorie')">Categorie</button>
+      <button class="tab ${activeTab==='piatti'?'active':''}" onclick="setTab('piatti')">Piatti</button>
+      <button class="tab ${activeTab==='info'?'active':''}" onclick="setTab('info')">Info locale</button>
+    </div>
+    <div id="tabContent"><p class="empty">Caricamento…</p></div>
+  `;
+  await reloadCategoriesAndSubs();
+  renderTabContent();
+}
+
+function setTab(tab){ activeTab = tab; renderTabContent(); }
+
+async function reloadCategoriesAndSubs(){
+  const [{data:cats, error:e1}, {data:subs, error:e2}] = await Promise.all([
+    sb.from('categories').select('*').order('sort_order'),
+    sb.from('subcategories').select('*').order('sort_order')
+  ]);
+  if(e1) console.error(e1);
+  if(e2) console.error(e2);
+  categories = cats || [];
+  subcategories = subs || [];
+}
+
+function renderTabContent(){
+  const el = document.getElementById('tabContent');
+  if(activeTab === 'categorie') renderCategorieTab(el);
+  else if(activeTab === 'piatti') renderPiattiTab(el);
+  else renderInfoTab(el);
+}
+
+function closeModal(){
+  const ov = document.getElementById('modalOverlay');
+  if(ov) ov.remove();
+  pendingPhotoBlob = null;
+}
+function openModal(html){
+  closeModal();
+  const ov = document.createElement('div');
+  ov.id = 'modalOverlay';
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `<div class="modal"><button class="close-x" onclick="closeModal()">✕</button>${html}</div>`;
+  document.body.appendChild(ov);
+}
+
+/* ========================================================================
+   TAB: CATEGORIE (+ sottocategorie)
+   ======================================================================== */
+function renderCategorieTab(el){
+  const rows = categories.map(cat=>{
+    const subs = subcategories.filter(s=>s.category_id===cat.id);
+    const subsHtml = subs.length ? `
+      <div style="margin:8px 0 0 14px; padding-left:12px; border-left:2px solid var(--line);">
+        ${subs.map(s=>`
+          <div class="row-item">
+            <div class="row-main">
+              <div class="row-title" style="font-size:0.98rem;">${esc(s.title.it)}</div>
+              <div class="row-sub">chiave: ${esc(s.key)} · ordine: ${s.sort_order}</div>
+            </div>
+            <div class="row-actions">
+              <button class="btn small secondary" onclick="openSubcategoryForm('${cat.id}','${s.id}')">Modifica</button>
+              <button class="btn small danger" onclick="deleteSubcategory('${s.id}')">Elimina</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+    return `
+      <div class="row-item" style="flex-direction:column; align-items:stretch;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <div class="row-main">
+            <div class="row-title">${esc(cat.title.it)}</div>
+            <div class="row-sub">chiave: ${esc(cat.key)} · icona: ${esc(cat.icon||'—')} · ordine: ${cat.sort_order}</div>
+          </div>
+          <div class="row-actions">
+            <button class="btn small secondary" onclick="openSubcategoryForm('${cat.id}', null)">+ Sotto-scheda</button>
+            <button class="btn small secondary" onclick="openCategoryForm('${cat.id}')">Modifica</button>
+            <button class="btn small danger" onclick="deleteCategory('${cat.id}')">Elimina</button>
+          </div>
+        </div>
+        ${subsHtml}
+      </div>
+    `;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Categorie principali</h2>
+        <button class="btn" onclick="openCategoryForm(null)">+ Nuova categoria</button>
+      </div>
+      ${categories.length ? rows : '<p class="empty">Nessuna categoria ancora.</p>'}
+    </div>
+  `;
+}
+
+function slugify(str){
+  return (str||'').toString().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || ('voce_' + Date.now());
+}
+
+function openCategoryForm(id){
+  const cat = id ? categories.find(c=>c.id===id) : null;
+  const title = cat ? cat.title : emptyLangObj();
+  openModal(`
+    <h3>${cat ? 'Modifica categoria' : 'Nuova categoria'}</h3>
+    <div class="msg" id="formMsg"></div>
+    ${LANGS.map(l=>`
+      <div class="field">
+        <label>Nome (${LANG_LABELS[l]})</label>
+        <input type="text" id="catTitle_${l}" value="${esc(title[l]||'')}">
+      </div>
+    `).join('')}
+    <div class="field">
+      <label>Icona</label>
+      <select id="catIcon">
+        ${ICON_OPTIONS.map(ic=>`<option value="${ic}" ${cat && cat.icon===ic ? 'selected':''}>${ic}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field">
+      <label>Ordine di comparsa (numero, più basso = prima)</label>
+      <input type="number" id="catSort" value="${cat ? cat.sort_order : (categories.length+1)*10}">
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="saveCategory(${id ? `'${id}'` : 'null'})">Salva</button>
+      <button class="btn secondary" onclick="closeModal()">Annulla</button>
+    </div>
+  `);
+}
+
+async function saveCategory(id){
+  const msg = document.getElementById('formMsg');
+  const title = {};
+  LANGS.forEach(l=> title[l] = document.getElementById('catTitle_'+l).value.trim());
+  if(!title.it){ msg.className='msg error'; msg.textContent='Il nome in Italiano è obbligatorio.'; return; }
+  const icon = document.getElementById('catIcon').value;
+  const sort_order = parseInt(document.getElementById('catSort').value) || 0;
+
+  msg.textContent = 'Salvataggio…';
+  let error;
+  if(id){
+    ({ error } = await sb.from('categories').update({ title, icon, sort_order }).eq('id', id));
+  } else {
+    const key = slugify(title.it);
+    ({ error } = await sb.from('categories').insert({ key, title, icon, sort_order }));
+  }
+  if(error){ msg.className='msg error'; msg.textContent = 'Errore: ' + error.message; return; }
+  await reloadCategoriesAndSubs();
+  closeModal();
+  renderTabContent();
+}
+
+async function deleteCategory(id){
+  if(!confirm('Eliminare questa categoria? Verranno eliminate anche le sotto-schede e tutti i piatti al suo interno. Azione irreversibile.')) return;
+  const { error } = await sb.from('categories').delete().eq('id', id);
+  if(error){ alert('Errore: ' + error.message); return; }
+  await reloadCategoriesAndSubs();
+  renderTabContent();
+}
+
+function openSubcategoryForm(categoryId, subId){
+  const sub = subId ? subcategories.find(s=>s.id===subId) : null;
+  const title = sub ? sub.title : emptyLangObj();
+  openModal(`
+    <h3>${sub ? 'Modifica sotto-scheda' : 'Nuova sotto-scheda'}</h3>
+    <div class="msg" id="formMsg"></div>
+    ${LANGS.map(l=>`
+      <div class="field">
+        <label>Nome (${LANG_LABELS[l]})</label>
+        <input type="text" id="subTitle_${l}" value="${esc(title[l]||'')}">
+      </div>
+    `).join('')}
+    <div class="field">
+      <label>Ordine di comparsa</label>
+      <input type="number" id="subSort" value="${sub ? sub.sort_order : (subcategories.filter(s=>s.category_id===categoryId).length+1)*10}">
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="saveSubcategory('${categoryId}', ${subId ? `'${subId}'` : 'null'})">Salva</button>
+      <button class="btn secondary" onclick="closeModal()">Annulla</button>
+    </div>
+  `);
+}
+
+async function saveSubcategory(categoryId, subId){
+  const msg = document.getElementById('formMsg');
+  const title = {};
+  LANGS.forEach(l=> title[l] = document.getElementById('subTitle_'+l).value.trim());
+  if(!title.it){ msg.className='msg error'; msg.textContent='Il nome in Italiano è obbligatorio.'; return; }
+  const sort_order = parseInt(document.getElementById('subSort').value) || 0;
+
+  msg.textContent = 'Salvataggio…';
+  let error;
+  if(subId){
+    ({ error } = await sb.from('subcategories').update({ title, sort_order }).eq('id', subId));
+  } else {
+    const key = slugify(title.it);
+    ({ error } = await sb.from('subcategories').insert({ category_id: categoryId, key, title, sort_order }));
+  }
+  if(error){ msg.className='msg error'; msg.textContent = 'Errore: ' + error.message; return; }
+  await reloadCategoriesAndSubs();
+  closeModal();
+  renderTabContent();
+}
+
+async function deleteSubcategory(id){
+  if(!confirm('Eliminare questa sotto-scheda? Verranno eliminati anche tutti i piatti al suo interno. Azione irreversibile.')) return;
+  const { error } = await sb.from('subcategories').delete().eq('id', id);
+  if(error){ alert('Errore: ' + error.message); return; }
+  await reloadCategoriesAndSubs();
+  renderTabContent();
+}
+
+/* ========================================================================
+   TAB: PIATTI
+   ======================================================================== */
+let piattiSelectedCat = null;
+let piattiSelectedSub = null;
+let piattiItems = [];
+
+async function renderPiattiTab(el){
+  if(!piattiSelectedCat && categories.length){ piattiSelectedCat = categories[0].id; }
+
+  const cat = categories.find(c=>c.id===piattiSelectedCat);
+  const subsForCat = cat ? subcategories.filter(s=>s.category_id===cat.id) : [];
+  if(subsForCat.length && !subsForCat.find(s=>s.id===piattiSelectedSub)){
+    piattiSelectedSub = subsForCat[0].id;
+  }
+  if(!subsForCat.length){ piattiSelectedSub = null; }
+
+  el.innerHTML = `
+    <div class="panel">
+      <div class="panel-head"><h2>Piatti e drink</h2></div>
+      <div class="two-col">
+        <div class="field">
+          <label>Categoria</label>
+          <select id="itemCategorySelect" onchange="onCategoryChangeForItems(this.value)">
+            ${categories.map(c=>`<option value="${c.id}" ${c.id===piattiSelectedCat?'selected':''}>${esc(c.title.it)}</option>`).join('')}
+          </select>
+        </div>
+        ${subsForCat.length ? `
+          <div class="field">
+            <label>Sotto-scheda</label>
+            <select id="itemSubcategorySelect" onchange="onSubcategoryChangeForItems(this.value)">
+              ${subsForCat.map(s=>`<option value="${s.id}" ${s.id===piattiSelectedSub?'selected':''}>${esc(s.title.it)}</option>`).join('')}
+            </select>
+          </div>
+        ` : '<div></div>'}
+      </div>
+      <div class="btn-row" style="margin-bottom:10px;">
+        <button class="btn" onclick="openItemForm(null)">+ Nuovo piatto</button>
+      </div>
+      <div id="itemsList"><p class="empty">Caricamento…</p></div>
+    </div>
+  `;
+  await loadItemsForCurrentSelection();
+  renderItemsList();
+}
+
+function onCategoryChangeForItems(catId){
+  piattiSelectedCat = catId;
+  piattiSelectedSub = null;
+  renderPiattiTab(document.getElementById('tabContent'));
+}
+function onSubcategoryChangeForItems(subId){
+  piattiSelectedSub = subId;
+  loadItemsForCurrentSelection().then(renderItemsList);
+}
+
+async function loadItemsForCurrentSelection(){
+  let query = sb.from('menu_items').select('*').eq('category_id', piattiSelectedCat).order('sort_order');
+  if(piattiSelectedSub){ query = query.eq('subcategory_id', piattiSelectedSub); }
+  else { query = query.is('subcategory_id', null); }
+  const { data, error } = await query;
+  if(error){ console.error(error); piattiItems = []; return; }
+  piattiItems = data || [];
+}
+
+function renderItemsList(){
+  const el = document.getElementById('itemsList');
+  if(!el) return;
+  if(!piattiItems.length){ el.innerHTML = '<p class="empty">Nessun piatto in questa sezione.</p>'; return; }
+  el.innerHTML = piattiItems.map(it=>`
+    <div class="row-item">
+      <div class="row-main" style="display:flex; align-items:center; gap:10px;">
+        ${it.photo_url ? `<img src="${it.photo_url}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:8px;flex-shrink:0;">` : ''}
+        <div>
+          <div class="row-title">${esc(it.name.it)}${it.recommended ? '<span class="badge">Consigliato</span>' : ''}</div>
+          <div class="row-sub">${esc(it.ingredients.it)} — ${esc(it.price)}</div>
+        </div>
+      </div>
+      <div class="row-actions">
+        <button class="btn small secondary" onclick="openItemForm('${it.id}')">Modifica</button>
+        <button class="btn small danger" onclick="deleteItem('${it.id}')">Elimina</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openItemForm(id){
+  const it = id ? piattiItems.find(x=>x.id===id) : null;
+  const name = it ? it.name : emptyLangObj();
+  const ingredients = it ? it.ingredients : emptyLangObj();
+  const allergens = it ? (it.allergens||[]) : [];
+
+  openModal(`
+    <h3>${it ? 'Modifica piatto' : 'Nuovo piatto'}</h3>
+    <div class="msg" id="formMsg"></div>
+    ${LANGS.map(l=>`
+      <div class="lang-group">
+        <div class="lang-tag">${LANG_LABELS[l]}</div>
+        <div class="field"><label>Nome</label><input type="text" id="itemName_${l}" value="${esc(name[l]||'')}"></div>
+        <div class="field"><label>Ingredienti</label><input type="text" id="itemIngr_${l}" value="${esc(ingredients[l]||'')}"></div>
+      </div>
+    `).join('')}
+    <div class="two-col">
+      <div class="field"><label>Prezzo (es. €9)</label><input type="text" id="itemPrice" value="${esc(it ? it.price : '')}"></div>
+      <div class="field"><label>Ordine</label><input type="number" id="itemSort" value="${it ? it.sort_order : (piattiItems.length+1)*10}"></div>
+    </div>
+    <div class="field">
+      <label><input type="checkbox" id="itemRecommended" ${it && it.recommended ? 'checked':''} style="width:auto;"> Consigliato (badge in evidenza)</label>
+    </div>
+    <div class="field">
+      <label>Allergeni</label>
+      <div class="allergen-list">
+        ${ALLERGEN_OPTIONS.map(a=>`
+          <label class="allergen-chip">
+            <input type="checkbox" value="${a}" ${allergens.includes(a)?'checked':''} class="allergenCheck">
+            ${ALLERGEN_LABELS[a]}
+          </label>
+        `).join('')}
+      </div>
+    </div>
+    <div class="field">
+      <label>Foto (facoltativa)</label>
+      <input type="file" accept="image/*" onchange="onItemPhotoChange(this)">
+      <div class="photo-preview" id="itemPhotoPreview">${it && it.photo_url ? `<img src="${it.photo_url}" alt="">` : ''}</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="saveItem(${id ? `'${id}'` : 'null'})">Salva</button>
+      <button class="btn secondary" onclick="closeModal()">Annulla</button>
+    </div>
+  `);
+}
+
+function onItemPhotoChange(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      const canvas = document.createElement('canvas');
+      const maxW = 900;
+      const scale = Math.min(1, maxW / img.width);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(function(blob){
+        pendingPhotoBlob = blob;
+        document.getElementById('itemPhotoPreview').innerHTML = `<img src="${canvas.toDataURL('image/jpeg',0.75)}" alt="">`;
+      }, 'image/jpeg', 0.78);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveItem(id){
+  const msg = document.getElementById('formMsg');
+  const name = {}, ingredients = {};
+  LANGS.forEach(l=>{
+    name[l] = document.getElementById('itemName_'+l).value.trim();
+    ingredients[l] = document.getElementById('itemIngr_'+l).value.trim();
+  });
+  if(!name.it || !ingredients.it){ msg.className='msg error'; msg.textContent='Nome e ingredienti in Italiano sono obbligatori.'; return; }
+  const price = document.getElementById('itemPrice').value.trim();
+  const sort_order = parseInt(document.getElementById('itemSort').value) || 0;
+  const recommended = document.getElementById('itemRecommended').checked;
+  const allergens = [...document.querySelectorAll('.allergenCheck:checked')].map(c=>c.value);
+
+  msg.textContent = 'Salvataggio…';
+
+  let photo_url = id ? (piattiItems.find(x=>x.id===id)||{}).photo_url : null;
+  if(pendingPhotoBlob){
+    const fileName = `item_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+    const { error: upErr } = await sb.storage.from('menu-photos').upload(fileName, pendingPhotoBlob, { contentType:'image/jpeg' });
+    if(upErr){ msg.className='msg error'; msg.textContent = 'Errore caricamento foto: ' + upErr.message; return; }
+    const { data: urlData } = sb.storage.from('menu-photos').getPublicUrl(fileName);
+    photo_url = urlData.publicUrl;
+  }
+
+  const payload = { name, ingredients, price, sort_order, recommended, allergens, photo_url,
+    category_id: piattiSelectedCat, subcategory_id: piattiSelectedSub || null };
+
+  let error;
+  if(id){ ({ error } = await sb.from('menu_items').update(payload).eq('id', id)); }
+  else { ({ error } = await sb.from('menu_items').insert(payload)); }
+
+  if(error){ msg.className='msg error'; msg.textContent = 'Errore: ' + error.message; return; }
+  await loadItemsForCurrentSelection();
+  closeModal();
+  renderItemsList();
+}
+
+async function deleteItem(id){
+  if(!confirm('Eliminare questo piatto? Azione irreversibile.')) return;
+  const { error } = await sb.from('menu_items').delete().eq('id', id);
+  if(error){ alert('Errore: ' + error.message); return; }
+  await loadItemsForCurrentSelection();
+  renderItemsList();
+}
+
+/* ========================================================================
+   TAB: INFO LOCALE
+   ======================================================================== */
+async function renderInfoTab(el){
+  el.innerHTML = `<div class="panel"><p class="empty">Caricamento…</p></div>`;
+  const { data, error } = await sb.from('venue_info').select('*').eq('id',1).maybeSingle();
+  if(error){ el.innerHTML = `<div class="panel"><p class="msg error">Errore: ${esc(error.message)}</p></div>`; return; }
+  const v = data || { address:emptyLangObj(), hours:emptyLangObj(), phone:emptyLangObj() };
+
+  el.innerHTML = `
+    <div class="panel">
+      <div class="panel-head"><h2>Posizione, orari, contatti</h2></div>
+      <div class="msg" id="infoMsg"></div>
+      <h3 style="font-size:1rem; margin:14px 0 8px;">Posizione</h3>
+      ${LANGS.map(l=>`
+        <div class="field"><label>${LANG_LABELS[l]}</label><input type="text" id="infoAddress_${l}" value="${esc((v.address||{})[l]||'')}"></div>
+      `).join('')}
+      <h3 style="font-size:1rem; margin:14px 0 8px;">Orari</h3>
+      ${LANGS.map(l=>`
+        <div class="field"><label>${LANG_LABELS[l]}</label><input type="text" id="infoHours_${l}" value="${esc((v.hours||{})[l]||'')}"></div>
+      `).join('')}
+      <h3 style="font-size:1rem; margin:14px 0 8px;">Contatti</h3>
+      ${LANGS.map(l=>`
+        <div class="field"><label>${LANG_LABELS[l]}</label><input type="text" id="infoPhone_${l}" value="${esc((v.phone||{})[l]||'')}"></div>
+      `).join('')}
+      <div class="btn-row"><button class="btn" onclick="saveVenueInfo()">Salva modifiche</button></div>
+    </div>
+  `;
+}
+
+async function saveVenueInfo(){
+  const msg = document.getElementById('infoMsg');
+  const address = {}, hours = {}, phone = {};
+  LANGS.forEach(l=>{
+    address[l] = document.getElementById('infoAddress_'+l).value.trim();
+    hours[l] = document.getElementById('infoHours_'+l).value.trim();
+    phone[l] = document.getElementById('infoPhone_'+l).value.trim();
+  });
+  msg.className='msg'; msg.textContent = 'Salvataggio…';
+  const { error } = await sb.from('venue_info').update({ address, hours, phone }).eq('id', 1);
+  if(error){ msg.className='msg error'; msg.textContent = 'Errore: ' + error.message; return; }
+  msg.className='msg ok'; msg.textContent = 'Salvato ✓';
+}
+
+initAuth();
+</script>
+</body>
+</html>
