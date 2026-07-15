@@ -116,7 +116,7 @@ const ALLERGENS = ["gluten","lattosio","frutta a guscio","uova","pesce","crostac
 const ALLERGEN_LABELS_IT = { gluten:"Glutine", lattosio:"Latte/Lattosio", "frutta a guscio":"Frutta a guscio", uova:"Uova", pesce:"Pesce", crostacei:"Crostacei", molluschi:"Molluschi", solfiti:"Solfiti", arachidi:"Arachidi", soia:"Soia", sedano:"Sedano", senape:"Senape", sesamo:"Sesamo", lupini:"Lupini" };
 
 let session = null;
-let categories = [], subcategories = [], menuItems = [], venueInfo = null, reviews = [];
+let categories = [], subcategories = [], menuItems = [], venueInfo = null;
 let currentTab = 'items';
 let editLang = 'it';
 const app = document.getElementById('app');
@@ -341,18 +341,16 @@ async function doLogout(){
 }
 
 async function loadAll(){
-  const [catsRes, subsRes, itemsRes, venueRes, reviewsRes] = await Promise.all([
+  const [catsRes, subsRes, itemsRes, venueRes] = await Promise.all([
     sb.from('categories').select('*').order('sort_order'),
     sb.from('subcategories').select('*').order('sort_order'),
     sb.from('menu_items').select('*').order('sort_order'),
-    sb.from('venue_info').select('*').eq('id',1).maybeSingle(),
-    sb.from('reviews').select('*').order('created_at', {ascending:false})
+    sb.from('venue_info').select('*').eq('id',1).maybeSingle()
   ]);
   categories = catsRes.data || [];
   subcategories = subsRes.data || [];
   menuItems = itemsRes.data || [];
   venueInfo = venueRes.data || { address:{}, hours:{}, phone:{} };
-  reviews = reviewsRes.data || [];
 }
 
 function renderShell(){
@@ -375,8 +373,7 @@ function renderTabs(){
   const tabs = [
     {key:'items', label:'Piatti & Drink'},
     {key:'categories', label:'Categorie'},
-    {key:'venue', label:'Info Locale'},
-    {key:'reviews', label:'Recensioni'}
+    {key:'venue', label:'Info Locale'}
   ];
   document.getElementById('tabs').innerHTML = tabs.map(tb=>
     `<button class="tab-btn ${currentTab===tb.key?'active':''}" onclick="switchTab('${tb.key}')">${tb.label}</button>`
@@ -394,7 +391,6 @@ function renderTabContent(){
   if(currentTab==='items') el.innerHTML = renderItemsTab();
   else if(currentTab==='categories') el.innerHTML = renderCategoriesTab();
   else if(currentTab==='venue') el.innerHTML = renderVenueTab();
-  else if(currentTab==='reviews') el.innerHTML = renderReviewsTab();
 }
 
 function langTabsHTML(){
@@ -713,33 +709,6 @@ async function saveVenue(){
   showToast('Info locale aggiornate');
   await loadAll();
   renderTabContent();
-}
-
-function renderReviewsTab(){
-  if(!reviews.length) return `<div class="empty">Nessuna recensione ancora.</div>`;
-  return reviews.map(r=>`
-    <div class="card">
-      <div class="card-head">
-        <div>
-          <h3>${r.name} — ${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</h3>
-          <p class="muted">${new Date(r.created_at).toLocaleDateString('it-IT')} · Utile: ${r.helpful_count||0}</p>
-          <p>${r.review_text}</p>
-          ${r.photo_url ? `<img class="item-photo" style="width:100px;height:100px;" src="${r.photo_url}">` : ''}
-        </div>
-        <button class="btn btn-danger" onclick="deleteReview('${r.id}')">Elimina</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-async function deleteReview(id){
-  showConfirmModal('Eliminare questa recensione?', async ()=>{
-    const { error } = await sb.from('reviews').delete().eq('id', id);
-    if(error){ showToast('Errore: '+error.message, true); return; }
-    showToast('Recensione eliminata');
-    await loadAll();
-    renderTabContent();
-  });
 }
 
 init();
