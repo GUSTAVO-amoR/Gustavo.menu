@@ -577,18 +577,28 @@ function renderCategoriesTab(){
   let html = langTabsHTML();
   html += `<p class="muted">Stai modificando i nomi in <strong>${LANG_LABEL[editLang]}</strong>.</p>`;
 
-  categories.forEach(cat=>{
+  const catsSorted = [...categories].sort((a,b)=>a.sort_order-b.sort_order);
+  catsSorted.forEach((cat,idx)=>{
+    const subsOfCat = subcategories.filter(s=>s.category_id===cat.id).sort((a,b)=>a.sort_order-b.sort_order);
     html += `<div class="card">
       <div class="card-head">
-        <div class="field" style="flex:1;"><input value="${(cat.title[editLang]||'').replace(/"/g,'&quot;')}" onchange="renameCategory('${cat.id}', this.value)"></div>
+        <div class="row" style="gap:4px;">
+          <button class="btn btn-outline btn-small" style="width:auto; padding:6px 10px;" onclick="moveCategory('${cat.id}',-1)" ${idx===0?'disabled':''} title="Sposta su">↑</button>
+          <button class="btn btn-outline btn-small" style="width:auto; padding:6px 10px;" onclick="moveCategory('${cat.id}',1)" ${idx===catsSorted.length-1?'disabled':''} title="Sposta giù">↓</button>
+        </div>
+        <div class="field" style="flex:1;"><input id="cat_name_${cat.id}" value="${(cat.title[editLang]||'').replace(/"/g,'&quot;')}"></div>
+        <button class="btn btn-primary btn-small" style="width:auto;" onclick="renameCategory('${cat.id}', document.getElementById('cat_name_${cat.id}').value)">Salva</button>
         <button class="btn btn-danger" onclick="deleteCategory('${cat.id}')">Elimina categoria</button>
       </div>
       <p class="muted">Chiave interna: ${cat.key}</p>
       <hr class="sep">
       <h3 style="font-size:1rem;">Sottocategorie</h3>
-      ${subcategories.filter(s=>s.category_id===cat.id).map(s=>`
+      ${subsOfCat.map((s,sidx)=>`
         <div class="row" style="margin:6px 0;">
-          <input value="${(s.title[editLang]||'').replace(/"/g,'&quot;')}" onchange="renameSubcategory('${s.id}', this.value)" style="flex:1; padding:8px; border:1px solid var(--line); border-radius:6px;">
+          <button class="btn btn-outline btn-small" style="width:auto; padding:6px 10px;" onclick="moveSubcategory('${s.id}',-1)" ${sidx===0?'disabled':''} title="Sposta su">↑</button>
+          <button class="btn btn-outline btn-small" style="width:auto; padding:6px 10px;" onclick="moveSubcategory('${s.id}',1)" ${sidx===subsOfCat.length-1?'disabled':''} title="Sposta giù">↓</button>
+          <input id="sub_name_${s.id}" value="${(s.title[editLang]||'').replace(/"/g,'&quot;')}" style="flex:1; padding:8px; border:1px solid var(--line); border-radius:6px;">
+          <button class="btn btn-primary btn-small" style="width:auto;" onclick="renameSubcategory('${s.id}', document.getElementById('sub_name_${s.id}').value)">Salva</button>
           <button class="btn btn-danger" onclick="deleteSubcategory('${s.id}')">Elimina</button>
         </div>
       `).join('')}
@@ -598,6 +608,37 @@ function renderCategoriesTab(){
 
   html += `<button class="btn btn-primary" style="width:auto;" onclick="addCategory()">+ Nuova categoria</button>`;
   return html;
+}
+
+async function moveCategory(id, direction){
+  const sorted = [...categories].sort((a,b)=>a.sort_order-b.sort_order);
+  const idx = sorted.findIndex(c=>c.id===id);
+  const swapIdx = idx + direction;
+  if(swapIdx < 0 || swapIdx >= sorted.length) return;
+  const a = sorted[idx], b = sorted[swapIdx];
+  const tmp = a.sort_order;
+  const { error: e1 } = await sb.from('categories').update({sort_order: b.sort_order}).eq('id', a.id);
+  const { error: e2 } = await sb.from('categories').update({sort_order: tmp}).eq('id', b.id);
+  if(e1 || e2){ showToast('Errore: ' + ((e1||e2).message), true); return; }
+  showToast('Ordine aggiornato');
+  await loadAll();
+  renderTabContent();
+}
+
+async function moveSubcategory(id, direction){
+  const sub = subcategories.find(s=>s.id===id);
+  const siblings = subcategories.filter(s=>s.category_id===sub.category_id).sort((a,b)=>a.sort_order-b.sort_order);
+  const idx = siblings.findIndex(s=>s.id===id);
+  const swapIdx = idx + direction;
+  if(swapIdx < 0 || swapIdx >= siblings.length) return;
+  const a = siblings[idx], b = siblings[swapIdx];
+  const tmp = a.sort_order;
+  const { error: e1 } = await sb.from('subcategories').update({sort_order: b.sort_order}).eq('id', a.id);
+  const { error: e2 } = await sb.from('subcategories').update({sort_order: tmp}).eq('id', b.id);
+  if(e1 || e2){ showToast('Errore: ' + ((e1||e2).message), true); return; }
+  showToast('Ordine aggiornato');
+  await loadAll();
+  renderTabContent();
 }
 
 async function renameCategory(id, value){
