@@ -489,6 +489,15 @@
     font-family:'Cormorant Garamond', serif; font-style:italic;
     color:var(--ink-soft); font-size:1.05rem; text-align:center; padding:40px 10px;
   }
+  .item-group-label{
+    font-family:'Jost', sans-serif; font-weight:600; font-size:0.72rem;
+    letter-spacing:2px; text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:22px 0 6px;
+    padding-bottom:4px;
+    border-bottom:1px solid var(--line);
+  }
+  .item-group-label:first-child{ margin-top:4px; }
   .closing-note{
     font-family:'Cormorant Garamond', serif; font-style:italic;
     color:var(--ink-soft); font-size:1rem; text-align:center;
@@ -571,7 +580,8 @@ async function loadMenuData(){
     if(!cat) return;
     const itemObj = {
       name: it.name, ingredients: it.ingredients, price: it.price,
-      allergens: it.allergens || [], recommended: it.recommended
+      allergens: it.allergens || [], recommended: it.recommended,
+      group_label: it.group_label || null
     };
     if(it.subcategory_id){
       const sub = subs.find(s=>s.id === it.subcategory_id);
@@ -803,7 +813,16 @@ function renderSection(){
   }
 
   const isWineTab = state.section === 'bebidas' && subKey === 'vini';
-  const itemsHTML = items.length ? items.map((it,i)=>renderItemRow(it,i)).join('') : `<div class="empty-note">${t('empty')}</div>`;
+  let lastGroupLabel = null;
+  const itemsHTML = items.length ? items.map((it,i)=>{
+    const currentLabel = it.group_label ? tr(it.group_label) : null;
+    let groupHeader = '';
+    if(currentLabel && currentLabel !== lastGroupLabel){
+      groupHeader = `<div class="item-group-label">${currentLabel}</div>`;
+    }
+    lastGroupLabel = currentLabel;
+    return groupHeader + renderItemRow(it,i);
+  }).join('') : `<div class="empty-note">${t('empty')}</div>`;
 
   root.innerHTML = `
     ${screenHeaderHTML()}
