@@ -435,6 +435,7 @@ function renderItemsList(items){
           ${it.photo_url ? `<img class="item-photo" src="${it.photo_url}" alt="">` : `<div class="item-photo-placeholder">no foto</div>`}
           <div>
             <h3>${it.name[editLang]||it.name.it} ${it.recommended ? '<span style="font-size:0.7rem;color:var(--success);">★ consigliato</span>' : ''}</h3>
+            ${it.group_label && it.group_label[editLang] ? `<p class="muted" style="font-weight:600; text-transform:uppercase; font-size:0.72rem; letter-spacing:1px;">${it.group_label[editLang]}</p>` : ''}
             <p class="muted">${it.ingredients[editLang]||it.ingredients.it}</p>
             <p class="muted">${it.price} ${it.allergens && it.allergens.length ? '· ' + it.allergens.join(', ') : ''}</p>
           </div>
@@ -452,8 +453,9 @@ function openItemForm(itemId, catId, subId){
   const it = itemId ? JSON.parse(JSON.stringify(menuItems.find(i=>i.id===itemId))) : {
     id:null, category_id:catId, subcategory_id:subId,
     name:{it:'',en:'',es:'',de:'',fr:''}, ingredients:{it:'',en:'',es:'',de:'',fr:''},
-    price:'', allergens:[], recommended:false, photo_url:null
+    price:'', allergens:[], recommended:false, photo_url:null, group_label:{it:'',en:'',es:'',de:'',fr:''}
   };
+  if(!it.group_label) it.group_label = {it:'',en:'',es:'',de:'',fr:''};
   window._editingItem = it;
   const wrap = document.getElementById('itemFormWrap');
   wrap.innerHTML = `
@@ -462,6 +464,7 @@ function openItemForm(itemId, catId, subId){
       ${langTabsHTML()}
       <div class="field"><label>Nome (${LANG_LABEL[editLang]})</label><input id="f_name" value="${(it.name[editLang]||'').replace(/"/g,'&quot;')}"></div>
       <div class="field"><label>Ingredienti (${LANG_LABEL[editLang]})</label><textarea id="f_ingr" rows="2">${it.ingredients[editLang]||''}</textarea></div>
+      <div class="field"><label>Sotto-gruppo (opzionale — es. "Rossi · Canari", "Gin")</label><input id="f_group" value="${(it.group_label[editLang]||'').replace(/"/g,'&quot;')}" placeholder="lascia vuoto se non serve"></div>
       <div class="grid2">
         <div class="field"><label>Prezzo</label><input id="f_price" value="${it.price||''}" placeholder="€9"></div>
         <div class="field"><label><input type="checkbox" id="f_recommended" ${it.recommended?'checked':''} style="width:auto;"> Consigliato</label></div>
@@ -489,6 +492,7 @@ async function saveItem(itemId, catId, subId){
   const it = window._editingItem;
   it.name[editLang] = document.getElementById('f_name').value.trim();
   it.ingredients[editLang] = document.getElementById('f_ingr').value.trim();
+  it.group_label[editLang] = document.getElementById('f_group').value.trim();
   it.price = document.getElementById('f_price').value.trim();
   it.recommended = document.getElementById('f_recommended').checked;
   it.allergens = [...document.querySelectorAll('.allergen-cb:checked')].map(c=>c.value);
@@ -496,6 +500,11 @@ async function saveItem(itemId, catId, subId){
   if(editLang === 'it'){
     showToast('Traduzione automatica in corso…');
     await autoTranslateObj(it, ['name','ingredients']);
+    if(it.group_label.it){
+      await autoTranslateObj(it, ['group_label']);
+    } else {
+      ['en','es','de','fr'].forEach(l=> it.group_label[l] = '');
+    }
   }
 
   const photoInput = document.getElementById('f_photo');
@@ -505,11 +514,14 @@ async function saveItem(itemId, catId, subId){
     if(!photo_url){ showToast('Errore caricamento foto', true); return; }
   }
 
+  const group_label_payload = it.group_label.it ? it.group_label : null;
+
   const payload = {
     category_id: catId,
     subcategory_id: subId || null,
     name: it.name, ingredients: it.ingredients, price: it.price,
-    allergens: it.allergens, recommended: it.recommended, photo_url
+    allergens: it.allergens, recommended: it.recommended, photo_url,
+    group_label: group_label_payload
   };
 
   let error;
