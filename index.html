@@ -232,6 +232,28 @@
     text-align:center;
     align-self:center;
   }
+  .degustazione-banner{
+    display:block;
+    width:100%;
+    background:var(--ink);
+    color:var(--white);
+    border:none;
+    font-family:'Cormorant Garamond', serif;
+    font-weight:700;
+    font-size:1.15rem;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    padding:16px 20px;
+    border-radius:14px;
+    cursor:pointer;
+    box-shadow:var(--shadow);
+    transition:transform .3s var(--ease), box-shadow .3s var(--ease);
+    margin-bottom:14px;
+  }
+  .degustazione-banner:hover{
+    transform:translateY(-2px);
+    box-shadow:var(--shadow-hover);
+  }
   .section-grid{
     width:100%;
     display:grid;
@@ -611,11 +633,11 @@ const LANG_LABEL = { it:"IT", en:"EN", es:"ES", de:"DE", fr:"FR" };
 const LANG_FULL_LABEL = { it:"Italiano", en:"English", es:"Español", de:"Deutsch", fr:"Français" };
 
 const UI = {
-  it:{ tagline:"Corralejo · Fuerteventura", footnote:"Tocca una sezione per iniziare", back:"Indietro", empty:"In arrivo su questa sezione.", welcomePrefix:"Benvenuto da", locLabel:"Posizione", hoursLabel:"Orari", contactLabel:"Contatti", menuWord:"Menu", closingNote:"Chiedete al nostro staff consigli e abbinamenti.", recommended:"Consigliato", storiaLink:"La nostra storia", storiaTitle:"La Nostra Storia", storiaText:"Gustavo nasce a Corralejo dall'amore per il mare, per i sapori autentici e per l'ospitalità genuina. Ogni piatto racconta una ricerca di ingredienti freschi e locali, in un ambiente pensato per farvi sentire a casa, a due passi dall'oceano.", allergenLabels:{gluten:"Glutine",lattosio:"Latte/Lattosio","frutta a guscio":"Frutta a guscio",uova:"Uova",pesce:"Pesce",solfiti:"Solfiti",crostacei:"Crostacei",molluschi:"Molluschi",arachidi:"Arachidi",soia:"Soia",sedano:"Sedano",senape:"Senape",sesamo:"Sesamo",lupini:"Lupini"} , searchPlaceholder:"Cerca un piatto, un ingrediente...", noResults:"Nessun risultato trovato.", allergenDisclaimer:"Per allergie o intolleranze specifiche, informate il nostro staff prima di ordinare.", winePairingNote:"Chiedete al personale l'abbinamento ideale con i nostri piatti." , miniBrandSub:"Ristorante · Tapas · Drink · Birra" },
-  en:{ tagline:"Corralejo · Fuerteventura", footnote:"Tap a section to begin", back:"Back", empty:"Coming soon to this section.", welcomePrefix:"Welcome to", locLabel:"Location", hoursLabel:"Hours", contactLabel:"Contact", menuWord:"Menu", closingNote:"Ask our staff for recommendations and pairings.", recommended:"Recommended", storiaLink:"Our story", storiaTitle:"Our Story", storiaText:"Gustavo was born in Corralejo out of a love for the sea, authentic flavors, and genuine hospitality. Every dish reflects a search for fresh, local ingredients, in a space designed to make you feel at home, steps from the ocean.", allergenLabels:{gluten:"Gluten",lattosio:"Milk/Dairy","frutta a guscio":"Tree nuts",uova:"Eggs",pesce:"Fish",solfiti:"Sulphites",crostacei:"Crustaceans",molluschi:"Molluscs",arachidi:"Peanuts",soia:"Soybeans",sedano:"Celery",senape:"Mustard",sesamo:"Sesame",lupini:"Lupin"} , searchPlaceholder:"Search a dish, an ingredient...", noResults:"No results found.", allergenDisclaimer:"For specific allergies or intolerances, please inform our staff before ordering.", winePairingNote:"Ask our staff for the ideal pairing with our dishes." , miniBrandSub:"Restaurant · Tapas · Drinks · Beer" },
-  es:{ tagline:"Corralejo · Fuerteventura", footnote:"Toca una sección para empezar", back:"Atrás", empty:"Próximamente en esta sección.", welcomePrefix:"Bienvenidos a", locLabel:"Ubicación", hoursLabel:"Horario", contactLabel:"Contacto", menuWord:"Menú", closingNote:"Consulte a nuestro personal para recomendaciones y maridajes.", recommended:"Recomendado", storiaLink:"Nuestra historia", storiaTitle:"Nuestra Historia", storiaText:"Gustavo nace en Corralejo del amor por el mar, los sabores auténticos y la hospitalidad genuina. Cada plato refleja la búsqueda de ingredientes frescos y locales, en un espacio pensado para que te sientas como en casa, a pasos del océano.", allergenLabels:{gluten:"Gluten",lattosio:"Leche/Lácteos","frutta a guscio":"Frutos secos",uova:"Huevo",pesce:"Pescado",solfiti:"Sulfitos",crostacei:"Crustáceos",molluschi:"Moluscos",arachidi:"Cacahuetes",soia:"Soja",sedano:"Apio",senape:"Mostaza",sesamo:"Sésamo",lupini:"Altramuces"} , searchPlaceholder:"Busca un plato, un ingrediente...", noResults:"No se han encontrado resultados.", allergenDisclaimer:"Para alergias o intolerancias específicas, informe a nuestro personal antes de pedir.", winePairingNote:"Pregunte a nuestro personal el maridaje ideal con nuestros platos." , miniBrandSub:"Restaurante · Tapas · Bebidas · Cerveza" },
-  de:{ tagline:"Corralejo · Fuerteventura", footnote:"Tippe auf einen Bereich, um zu beginnen", back:"Zurück", empty:"Demnächst in diesem Bereich.", welcomePrefix:"Willkommen bei", locLabel:"Standort", hoursLabel:"Öffnungszeiten", contactLabel:"Kontakt", menuWord:"Menü", closingNote:"Fragen Sie unser Personal nach Empfehlungen und Kombinationen.", recommended:"Empfehlung", storiaLink:"Unsere Geschichte", storiaTitle:"Unsere Geschichte", storiaText:"Gustavo entstand in Corralejo aus der Liebe zum Meer, zu authentischen Aromen und echter Gastfreundschaft. Jedes Gericht spiegelt die Suche nach frischen, lokalen Zutaten wider, in einem Raum, der sich wie zu Hause anfühlt, nur wenige Schritte vom Ozean entfernt.", allergenLabels:{gluten:"Gluten",lattosio:"Milch","frutta a guscio":"Schalenfrüchte",uova:"Ei",pesce:"Fisch",solfiti:"Sulfite",crostacei:"Krebstiere",molluschi:"Weichtiere",arachidi:"Erdnüsse",soia:"Soja",sedano:"Sellerie",senape:"Senf",sesamo:"Sesam",lupini:"Lupinen"} , searchPlaceholder:"Gericht oder Zutat suchen...", noResults:"Keine Ergebnisse gefunden.", allergenDisclaimer:"Bei spezifischen Allergien oder Unverträglichkeiten informieren Sie bitte unser Personal vor der Bestellung.", winePairingNote:"Fragen Sie unser Personal nach der idealen Kombination mit unseren Gerichten." , miniBrandSub:"Restaurant · Tapas · Getränke · Bier" },
-  fr:{ tagline:"Corralejo · Fuerteventura", footnote:"Touchez une section pour commencer", back:"Retour", empty:"Bientôt disponible dans cette section.", welcomePrefix:"Bienvenue chez", locLabel:"Emplacement", hoursLabel:"Horaires", contactLabel:"Contact", menuWord:"Menu", closingNote:"Demandez conseil à notre personnel pour les accords.", recommended:"Recommandé", storiaLink:"Notre histoire", storiaTitle:"Notre Histoire", storiaText:"Gustavo est né à Corralejo par amour de la mer, des saveurs authentiques et de l'hospitalité sincère. Chaque plat reflète une recherche d'ingrédients frais et locaux, dans un lieu pensé pour vous sentir chez vous, à deux pas de l'océan.", allergenLabels:{gluten:"Gluten",lattosio:"Lait","frutta a guscio":"Fruits à coque",uova:"Œufs",pesce:"Poisson",solfiti:"Sulfites",crostacei:"Crustacés",molluschi:"Mollusques",arachidi:"Arachides",soia:"Soja",sedano:"Céleri",senape:"Moutarde",sesamo:"Sésame",lupini:"Lupin"} , searchPlaceholder:"Cherchez un plat, un ingrédient...", noResults:"Aucun résultat trouvé.", allergenDisclaimer:"Pour toute allergie ou intolérance spécifique, informez notre personnel avant de commander.", winePairingNote:"Demandez à notre personnel l'accord idéal avec nos plats." , miniBrandSub:"Restaurant · Tapas · Boissons · Bière" }
+  it:{ tagline:"Corralejo · Fuerteventura", footnote:"Tocca una sezione per iniziare", back:"Indietro", empty:"In arrivo su questa sezione.", welcomePrefix:"Benvenuto da", locLabel:"Posizione", hoursLabel:"Orari", contactLabel:"Contatti", menuWord:"Menu", closingNote:"Chiedete al nostro staff consigli e abbinamenti.", recommended:"Consigliato", storiaLink:"La nostra storia", storiaTitle:"La Nostra Storia", storiaText:"Gustavo nasce a Corralejo dall'amore per il mare, per i sapori autentici e per l'ospitalità genuina. Ogni piatto racconta una ricerca di ingredienti freschi e locali, in un ambiente pensato per farvi sentire a casa, a due passi dall'oceano.", allergenLabels:{gluten:"Glutine",lattosio:"Latte/Lattosio","frutta a guscio":"Frutta a guscio",uova:"Uova",pesce:"Pesce",solfiti:"Solfiti",crostacei:"Crostacei",molluschi:"Molluschi",arachidi:"Arachidi",soia:"Soia",sedano:"Sedano",senape:"Senape",sesamo:"Sesamo",lupini:"Lupini"} , searchPlaceholder:"Cerca un piatto, un ingrediente...", noResults:"Nessun risultato trovato.", allergenDisclaimer:"Per allergie o intolleranze specifiche, informate il nostro staff prima di ordinare.", winePairingNote:"Chiedete al personale l'abbinamento ideale con i nostri piatti." , miniBrandSub:"Ristorante · Tapas · Drink · Birra", degustazioneTitle:"Degustazione (60€)", degustazioneText:"Selezione dello chef, composta da vari piatti di antipasto, vari primi e vari secondi e dolci, e potra essere vegetariana, di carne o di pesce; escluso vino." },
+  en:{ tagline:"Corralejo · Fuerteventura", footnote:"Tap a section to begin", back:"Back", empty:"Coming soon to this section.", welcomePrefix:"Welcome to", locLabel:"Location", hoursLabel:"Hours", contactLabel:"Contact", menuWord:"Menu", closingNote:"Ask our staff for recommendations and pairings.", recommended:"Recommended", storiaLink:"Our story", storiaTitle:"Our Story", storiaText:"Gustavo was born in Corralejo out of a love for the sea, authentic flavors, and genuine hospitality. Every dish reflects a search for fresh, local ingredients, in a space designed to make you feel at home, steps from the ocean.", allergenLabels:{gluten:"Gluten",lattosio:"Milk/Dairy","frutta a guscio":"Tree nuts",uova:"Eggs",pesce:"Fish",solfiti:"Sulphites",crostacei:"Crustaceans",molluschi:"Molluscs",arachidi:"Peanuts",soia:"Soybeans",sedano:"Celery",senape:"Mustard",sesamo:"Sesame",lupini:"Lupin"} , searchPlaceholder:"Search a dish, an ingredient...", noResults:"No results found.", allergenDisclaimer:"For specific allergies or intolerances, please inform our staff before ordering.", winePairingNote:"Ask our staff for the ideal pairing with our dishes." , miniBrandSub:"Restaurant · Tapas · Drinks · Beer", degustazioneTitle:"Tasting Menu (€60)", degustazioneText:"Chef selection, made up of various starter dishes, various first and second courses and desserts, and can be vegetarian, meat-based or fish-based; wine excluded." },
+  es:{ tagline:"Corralejo · Fuerteventura", footnote:"Toca una sección para empezar", back:"Atrás", empty:"Próximamente en esta sección.", welcomePrefix:"Bienvenidos a", locLabel:"Ubicación", hoursLabel:"Horario", contactLabel:"Contacto", menuWord:"Menú", closingNote:"Consulte a nuestro personal para recomendaciones y maridajes.", recommended:"Recomendado", storiaLink:"Nuestra historia", storiaTitle:"Nuestra Historia", storiaText:"Gustavo nace en Corralejo del amor por el mar, los sabores auténticos y la hospitalidad genuina. Cada plato refleja la búsqueda de ingredientes frescos y locales, en un espacio pensado para que te sientas como en casa, a pasos del océano.", allergenLabels:{gluten:"Gluten",lattosio:"Leche/Lácteos","frutta a guscio":"Frutos secos",uova:"Huevo",pesce:"Pescado",solfiti:"Sulfitos",crostacei:"Crustáceos",molluschi:"Moluscos",arachidi:"Cacahuetes",soia:"Soja",sedano:"Apio",senape:"Mostaza",sesamo:"Sésamo",lupini:"Altramuces"} , searchPlaceholder:"Busca un plato, un ingrediente...", noResults:"No se han encontrado resultados.", allergenDisclaimer:"Para alergias o intolerancias específicas, informe a nuestro personal antes de pedir.", winePairingNote:"Pregunte a nuestro personal el maridaje ideal con nuestros platos." , miniBrandSub:"Restaurante · Tapas · Bebidas · Cerveza", degustazioneTitle:"Degustacion (60€)", degustazioneText:"Seleccion del chef, compuesta por varios platos de entrantes, varios primeros y segundos platos y postres, y podra ser vegetariana, de carne o de pescado; vino excluido." },
+  de:{ tagline:"Corralejo · Fuerteventura", footnote:"Tippe auf einen Bereich, um zu beginnen", back:"Zurück", empty:"Demnächst in diesem Bereich.", welcomePrefix:"Willkommen bei", locLabel:"Standort", hoursLabel:"Öffnungszeiten", contactLabel:"Kontakt", menuWord:"Menü", closingNote:"Fragen Sie unser Personal nach Empfehlungen und Kombinationen.", recommended:"Empfehlung", storiaLink:"Unsere Geschichte", storiaTitle:"Unsere Geschichte", storiaText:"Gustavo entstand in Corralejo aus der Liebe zum Meer, zu authentischen Aromen und echter Gastfreundschaft. Jedes Gericht spiegelt die Suche nach frischen, lokalen Zutaten wider, in einem Raum, der sich wie zu Hause anfühlt, nur wenige Schritte vom Ozean entfernt.", allergenLabels:{gluten:"Gluten",lattosio:"Milch","frutta a guscio":"Schalenfrüchte",uova:"Ei",pesce:"Fisch",solfiti:"Sulfite",crostacei:"Krebstiere",molluschi:"Weichtiere",arachidi:"Erdnüsse",soia:"Soja",sedano:"Sellerie",senape:"Senf",sesamo:"Sesam",lupini:"Lupinen"} , searchPlaceholder:"Gericht oder Zutat suchen...", noResults:"Keine Ergebnisse gefunden.", allergenDisclaimer:"Bei spezifischen Allergien oder Unverträglichkeiten informieren Sie bitte unser Personal vor der Bestellung.", winePairingNote:"Fragen Sie unser Personal nach der idealen Kombination mit unseren Gerichten." , miniBrandSub:"Restaurant · Tapas · Getränke · Bier", degustazioneTitle:"Verkostungsmenu (60€)", degustazioneText:"Auswahl des Kuechenchefs, bestehend aus verschiedenen Vorspeisen, verschiedenen ersten und zweiten Gaengen und Desserts; kann vegetarisch, mit Fleisch oder Fisch sein; Wein ausgeschlossen." },
+  fr:{ tagline:"Corralejo · Fuerteventura", footnote:"Touchez une section pour commencer", back:"Retour", empty:"Bientôt disponible dans cette section.", welcomePrefix:"Bienvenue chez", locLabel:"Emplacement", hoursLabel:"Horaires", contactLabel:"Contact", menuWord:"Menu", closingNote:"Demandez conseil à notre personnel pour les accords.", recommended:"Recommandé", storiaLink:"Notre histoire", storiaTitle:"Notre Histoire", storiaText:"Gustavo est né à Corralejo par amour de la mer, des saveurs authentiques et de l'hospitalité sincère. Chaque plat reflète une recherche d'ingrédients frais et locaux, dans un lieu pensé pour vous sentir chez vous, à deux pas de l'océan.", allergenLabels:{gluten:"Gluten",lattosio:"Lait","frutta a guscio":"Fruits à coque",uova:"Œufs",pesce:"Poisson",solfiti:"Sulfites",crostacei:"Crustacés",molluschi:"Mollusques",arachidi:"Arachides",soia:"Soja",sedano:"Céleri",senape:"Moutarde",sesamo:"Sésame",lupini:"Lupin"} , searchPlaceholder:"Cherchez un plat, un ingrédient...", noResults:"Aucun résultat trouvé.", allergenDisclaimer:"Pour toute allergie ou intolérance spécifique, informez notre personnel avant de commander.", winePairingNote:"Demandez à notre personnel l'accord idéal avec nos plats." , miniBrandSub:"Restaurant · Tapas · Boissons · Bière", degustazioneTitle:"Menu Degustation (60€)", degustazioneText:"Selection du chef, composee de plusieurs plats d entree, plusieurs premiers et seconds plats et desserts, et pourra etre vegetarienne, a base de viande ou de poisson ; vin exclu." }
 };
 
 /* =========================================================================
@@ -678,6 +700,7 @@ function iconFor(key){
 function render(){
   if(state.screen === 'home'){ renderHome(); }
   else if(state.screen === 'storia'){ renderStoria(); }
+  else if(state.screen === 'degustazione'){ renderDegustazione(); }
   else { renderSection(); }
 }
 
@@ -685,6 +708,27 @@ function openStoria(){
   state.screen = 'storia';
   render();
   window.scrollTo(0,0);
+}
+
+function openDegustazione(){
+  state.screen = 'degustazione';
+  render();
+  window.scrollTo(0,0);
+}
+
+function renderDegustazione(){
+  root.innerHTML = `
+    ${screenHeaderHTML()}
+    <div class="screen">
+      <div class="section-title-top">
+        <div class="title-caps">${t('degustazioneTitle')}</div>
+      </div>
+      <div class="content-col">
+        <p class="storia-text">${t('degustazioneText')}</p>
+      </div>
+      ${venueInfoHTML()}
+    </div>
+  `;
 }
 
 function renderStoria(){
@@ -734,6 +778,7 @@ function renderHome(){
           <button class="storia-link-inline" onclick="openStoria()">${t('storiaLink')} <span class="storia-arrow">→</span></button>
         </div>
 
+        <button class="degustazione-banner" onclick="openDegustazione()">${t('degustazioneTitle')}</button>
         <div class="section-grid">${cards}</div>
         <div class="home-footnote">${t('footnote')}</div>
       </div>
