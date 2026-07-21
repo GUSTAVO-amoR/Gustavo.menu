@@ -734,6 +734,8 @@ function renderVenueTab(){
   const phone = venueInfo.phone || {};
   const degTitle = venueInfo.degustazione_title || {};
   const degText = venueInfo.degustazione_text || {};
+  const storiaTitle = venueInfo.storia_title || {};
+  const storiaText = venueInfo.storia_text || {};
   return `
     ${langTabsHTML()}
     <div class="card">
@@ -743,12 +745,35 @@ function renderVenueTab(){
       <button class="btn btn-primary btn-small" onclick="saveVenue()">Salva</button>
     </div>
     <div class="card">
+      <h3 style="margin-bottom:12px;">"La Nostra Storia"</h3>
+      <div class="field"><label>Titolo (${LANG_LABEL[editLang]})</label><input id="v_storia_title" value="${(storiaTitle[editLang]||'').replace(/"/g,'&quot;')}"></div>
+      <div class="field"><label>Testo (${LANG_LABEL[editLang]})</label><textarea id="v_storia_text" rows="5">${storiaText[editLang]||''}</textarea></div>
+      <button class="btn btn-primary btn-small" onclick="saveStoria()">Salva</button>
+    </div>
+    <div class="card">
       <h3 style="margin-bottom:12px;">Banner "Degustazione"</h3>
       <div class="field"><label>Titolo (${LANG_LABEL[editLang]}) — includi il prezzo qui, es. "Degustazione (60€)"</label><input id="v_deg_title" value="${(degTitle[editLang]||'').replace(/"/g,'&quot;')}"></div>
       <div class="field"><label>Testo descrittivo (${LANG_LABEL[editLang]})</label><textarea id="v_deg_text" rows="4">${degText[editLang]||''}</textarea></div>
       <button class="btn btn-primary btn-small" onclick="saveDegustazione()">Salva</button>
     </div>
   `;
+}
+
+async function saveStoria(){
+  const storiaTitle = venueInfo.storia_title || {};
+  const storiaText = venueInfo.storia_text || {};
+  storiaTitle[editLang] = document.getElementById('v_storia_title').value.trim();
+  storiaText[editLang] = document.getElementById('v_storia_text').value.trim();
+  if(editLang === 'it'){
+    showToast('Traduzione automatica in corso…');
+    const wrapper = { storiaTitle, storiaText };
+    await autoTranslateObj(wrapper, ['storiaTitle','storiaText']);
+  }
+  const { error } = await sb.from('venue_info').update({storia_title: storiaTitle, storia_text: storiaText}).eq('id',1);
+  if(error){ showToast('Errore: '+error.message, true); return; }
+  showToast('"La Nostra Storia" aggiornata');
+  await loadAll();
+  renderTabContent();
 }
 
 async function saveDegustazione(){
