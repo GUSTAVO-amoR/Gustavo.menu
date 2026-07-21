@@ -616,7 +616,7 @@ async function loadMenuData(){
 
   const menu = {};
   cats.forEach(cat=>{
-    menu[cat.key] = { icon: cat.icon, title: cat.title, icon_url: cat.icon_url || null, icon_scale: cat.icon_scale || 1, icon_pos_x: cat.icon_pos_x!=null ? cat.icon_pos_x : 50, icon_pos_y: cat.icon_pos_y!=null ? cat.icon_pos_y : 50 };
+    menu[cat.key] = { icon: cat.icon, title: cat.title };
   });
   subs.forEach(sub=>{
     const cat = cats.find(c=>c.id === sub.category_id);
@@ -645,15 +645,6 @@ async function loadMenuData(){
 
   MENU = menu;
   if(venueRes.data){ VENUE = venueRes.data; }
-  if(VENUE.icon_color_filter){
-    let styleTag = document.getElementById('dynamicIconColorStyle');
-    if(!styleTag){
-      styleTag = document.createElement('style');
-      styleTag.id = 'dynamicIconColorStyle';
-      document.head.appendChild(styleTag);
-    }
-    styleTag.textContent = `.section-card-icon{ filter: ${VENUE.icon_color_filter}; }`;
-  }
   DATA_READY = true;
 }
 
@@ -798,10 +789,9 @@ const CATEGORY_ICON_DATA = {
 function renderHome(){
   const cards = Object.keys(MENU).map(key=>{
     const sec = MENU[key];
-    const iconSrc = sec.icon_url || CATEGORY_ICON_DATA[key];
-    const customStyle = sec.icon_url ? ` style="object-fit:cover; object-position:${sec.icon_pos_x}% ${sec.icon_pos_y}%; transform:scale(${sec.icon_scale}); background:${VENUE.icon_color||'#0b3d5c'}; border-radius:50%;"` : '';
+    const iconSrc = CATEGORY_ICON_DATA[key];
     return `<button class="section-card" onclick="openSection('${key}')" aria-label="${tr(sec.title)}">
-      ${iconSrc ? `<img class="section-card-icon${key==='bebidas' ? ' icon-bevande' : ''}${key==='antipasti' ? ' icon-large' : ''}${key==='postres' ? ' icon-large' : ''}${key==='pizze_fritte' ? ' icon-montanara' : ''}${key==='Carta dei Vini' ? ' icon-vini' : ''}${key==='Distelleria' ? ' icon-distelleria' : ''}${key==='Cocktail' ? ' icon-cocktail' : ''}" src="${iconSrc}"${customStyle} alt="">` : ''}
+      ${iconSrc ? `<img class="section-card-icon${key==='bebidas' ? ' icon-bevande' : ''}${key==='antipasti' ? ' icon-large' : ''}${key==='postres' ? ' icon-large' : ''}${key==='pizze_fritte' ? ' icon-montanara' : ''}${key==='Carta dei Vini' ? ' icon-vini' : ''}${key==='Distelleria' ? ' icon-distelleria' : ''}${key==='Cocktail' ? ' icon-cocktail' : ''}" src="${iconSrc}" alt="">` : ''}
       <div class="label">${tr(sec.title)}</div>
     </button>`;
   }).join('');
