@@ -769,7 +769,7 @@ function renderVenueTab(){
       <p class="muted" style="margin-bottom:10px;">Apri l'editor per caricare, ingrandire e posizionare l'immagine di ogni icona prima di salvarla.</p>
       ${categories.map(cat=>`
         <div class="row" style="margin:10px 0; align-items:center; gap:12px;">
-          ${cat.icon_url ? `<img src="${cat.icon_url}" style="width:44px;height:44px;object-fit:cover;object-position:${cat.icon_pos_x||50}% ${cat.icon_pos_y||50}%;transform:scale(${cat.icon_scale||1});border:1px solid var(--line);border-radius:8px;">` : `<div class="item-photo-placeholder" style="width:44px;height:44px;font-size:0.55rem;">no img</div>`}
+          ${cat.icon_url ? `<img src="${cat.icon_url}" style="width:44px;height:44px;object-fit:cover;object-position:${cat.icon_pos_x||50}% ${cat.icon_pos_y||50}%;transform:scale(${cat.icon_scale||1});background:${venueInfo.icon_color||'#0b3d5c'};border:1px solid var(--line);border-radius:8px;">` : `<div class="item-photo-placeholder" style="width:44px;height:44px;font-size:0.55rem;">no img</div>`}
           <div style="flex:1; font-weight:600;">${cat.title[editLang]||cat.title.it}</div>
           <button class="btn btn-outline btn-small" style="width:auto;" onclick="openIconEditor('${cat.id}')">Modifica icona</button>
         </div>
@@ -799,7 +799,7 @@ function openIconEditor(catId){
     <div class="modal-box" style="max-width:360px;">
       <h3 style="margin-bottom:14px;">Icona: ${cat.title[editLang]||cat.title.it}</h3>
       <input type="file" accept="image/*" id="iconEditorFile" style="margin-bottom:14px;">
-      <div id="iconEditorPreviewWrap" style="width:160px; height:160px; margin:0 auto 14px; border-radius:16px; border:2px dashed var(--ink-soft); overflow:hidden; position:relative; background:var(--cream-soft, #f3ede4); cursor:grab; touch-action:none;">
+      <div id="iconEditorPreviewWrap" style="width:160px; height:160px; margin:0 auto 14px; border-radius:16px; border:2px dashed var(--ink-soft); overflow:hidden; position:relative; background:${venueInfo.icon_color||'#0b3d5c'}; cursor:grab; touch-action:none;">
         ${_iconEditorState.previewSrc ? `<img id="iconEditorImg" src="${_iconEditorState.previewSrc}" style="width:100%; height:100%; object-fit:cover; object-position:${_iconEditorState.posX}% ${_iconEditorState.posY}%; transform:scale(${_iconEditorState.scale}); pointer-events:none;">` : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--ink-soft);font-size:0.8rem;text-align:center;padding:10px;">Scegli un'immagine sopra</div>`}
       </div>
       <div class="field">
