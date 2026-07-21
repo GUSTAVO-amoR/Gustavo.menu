@@ -799,7 +799,7 @@ function renderHome(){
   const cards = Object.keys(MENU).map(key=>{
     const sec = MENU[key];
     const iconSrc = sec.icon_url || CATEGORY_ICON_DATA[key];
-    const customStyle = sec.icon_url ? ` style="object-fit:cover; object-position:${sec.icon_pos_x}% ${sec.icon_pos_y}%; transform:scale(${sec.icon_scale});"` : '';
+    const customStyle = sec.icon_url ? ` style="object-fit:cover; object-position:${sec.icon_pos_x}% ${sec.icon_pos_y}%; transform:scale(${sec.icon_scale}); background:${VENUE.icon_color||'#0b3d5c'}; border-radius:50%;"` : '';
     return `<button class="section-card" onclick="openSection('${key}')" aria-label="${tr(sec.title)}">
       ${iconSrc ? `<img class="section-card-icon${key==='bebidas' ? ' icon-bevande' : ''}${key==='antipasti' ? ' icon-large' : ''}${key==='postres' ? ' icon-large' : ''}${key==='pizze_fritte' ? ' icon-montanara' : ''}${key==='Carta dei Vini' ? ' icon-vini' : ''}${key==='Distelleria' ? ' icon-distelleria' : ''}${key==='Cocktail' ? ' icon-cocktail' : ''}" src="${iconSrc}"${customStyle} alt="">` : ''}
       <div class="label">${tr(sec.title)}</div>
