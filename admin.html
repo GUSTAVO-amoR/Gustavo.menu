@@ -732,6 +732,8 @@ function renderVenueTab(){
   const address = venueInfo.address || {};
   const hours = venueInfo.hours || {};
   const phone = venueInfo.phone || {};
+  const degTitle = venueInfo.degustazione_title || {};
+  const degText = venueInfo.degustazione_text || {};
   return `
     ${langTabsHTML()}
     <div class="card">
@@ -740,7 +742,30 @@ function renderVenueTab(){
       <div class="field"><label>Telefono / Contatto (${LANG_LABEL[editLang]})</label><input id="v_phone" value="${(phone[editLang]||'').replace(/"/g,'&quot;')}"></div>
       <button class="btn btn-primary btn-small" onclick="saveVenue()">Salva</button>
     </div>
+    <div class="card">
+      <h3 style="margin-bottom:12px;">Banner "Degustazione"</h3>
+      <div class="field"><label>Titolo (${LANG_LABEL[editLang]}) — includi il prezzo qui, es. "Degustazione (60€)"</label><input id="v_deg_title" value="${(degTitle[editLang]||'').replace(/"/g,'&quot;')}"></div>
+      <div class="field"><label>Testo descrittivo (${LANG_LABEL[editLang]})</label><textarea id="v_deg_text" rows="4">${degText[editLang]||''}</textarea></div>
+      <button class="btn btn-primary btn-small" onclick="saveDegustazione()">Salva</button>
+    </div>
   `;
+}
+
+async function saveDegustazione(){
+  const degTitle = venueInfo.degustazione_title || {};
+  const degText = venueInfo.degustazione_text || {};
+  degTitle[editLang] = document.getElementById('v_deg_title').value.trim();
+  degText[editLang] = document.getElementById('v_deg_text').value.trim();
+  if(editLang === 'it'){
+    showToast('Traduzione automatica in corso…');
+    const wrapper = { degTitle, degText };
+    await autoTranslateObj(wrapper, ['degTitle','degText']);
+  }
+  const { error } = await sb.from('venue_info').update({degustazione_title: degTitle, degustazione_text: degText}).eq('id',1);
+  if(error){ showToast('Errore: '+error.message, true); return; }
+  showToast('Degustazione aggiornata');
+  await loadAll();
+  renderTabContent();
 }
 
 async function saveVenue(){
