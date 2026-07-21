@@ -763,10 +763,10 @@ function renderStoria(){
     ${screenHeaderHTML()}
     <div class="screen">
       <div class="section-title-top">
-        <div class="title-caps">${t('storiaTitle')}</div>
+        <div class="title-caps">${VENUE.storia_title ? tr(VENUE.storia_title) : t('storiaTitle')}</div>
       </div>
       <div class="content-col">
-        <p class="storia-text">${t('storiaText')}</p>
+        <p class="storia-text">${VENUE.storia_text ? tr(VENUE.storia_text) : t('storiaText')}</p>
       </div>
       ${venueInfoHTML()}
     </div>
