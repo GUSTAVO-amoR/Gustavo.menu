@@ -895,7 +895,7 @@ function renderSection(){
 
   const isWineTab = state.section === 'bebidas' && subKey === 'vini';
   const isCocktailTab = state.section === 'Cocktail';
-  const isGinTab = state.section === 'Distelleria' && (subKey === 'gin_canari' || subKey === 'gin');
+  const isGinTab = state.section === 'Distelleria';
   const specialNoteKey = isCocktailTab ? 'cocktailsOnRequestNote' : (isGinTab ? 'ginMixerNote' : null);
   let lastGroupLabel = null;
   const itemsHTML = items.length ? items.map((it,i)=>{
