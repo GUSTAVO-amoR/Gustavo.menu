@@ -761,8 +761,10 @@ function renderVenueTab(){
           <option value="sopra_logo" ${venueInfo.storia_position==='sopra_logo'?'selected':''}>Sopra il logo</option>
           <option value="sotto_tagline" ${!venueInfo.storia_position||venueInfo.storia_position==='sotto_tagline'?'selected':''}>Posizione attuale (sotto Corralejo)</option>
           <option value="sopra_griglia" ${venueInfo.storia_position==='sopra_griglia'?'selected':''}>Sopra le icone categorie</option>
+          <option value="meta_griglia" ${venueInfo.storia_position==='meta_griglia'?'selected':''}>In mezzo alla griglia</option>
           <option value="sotto_griglia" ${venueInfo.storia_position==='sotto_griglia'?'selected':''}>Sotto le icone categorie</option>
         </select>
+        <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Dopo quante icone <input type="number" min="0" max="20" value="${venueInfo.storia_grid_split||2}" style="width:50px;" onchange="updateVenueField('storia_grid_split', parseInt(this.value)||2)"></label>
         <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Sfondo <input type="color" value="${venueInfo.storia_color||'#0b3d5c'}" onchange="updateVenueField('storia_color', this.value)"></label>
         <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Testo <input type="color" value="${venueInfo.storia_text_color||'#fbfeff'}" onchange="updateVenueField('storia_text_color', this.value)"></label>
         <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem;"><input type="checkbox" ${venueInfo.storia_bold?'checked':''} onchange="updateVenueField('storia_bold', this.checked)"> Grassetto</label>
@@ -784,8 +786,10 @@ function renderVenueTab(){
           <option value="sopra_logo" ${venueInfo.degustazione_position==='sopra_logo'?'selected':''}>Sopra il logo</option>
           <option value="sotto_tagline" ${venueInfo.degustazione_position==='sotto_tagline'?'selected':''}>Sotto Corralejo</option>
           <option value="sopra_griglia" ${!venueInfo.degustazione_position||venueInfo.degustazione_position==='sopra_griglia'?'selected':''}>Posizione attuale (sopra le icone)</option>
+          <option value="meta_griglia" ${venueInfo.degustazione_position==='meta_griglia'?'selected':''}>In mezzo alla griglia</option>
           <option value="sotto_griglia" ${venueInfo.degustazione_position==='sotto_griglia'?'selected':''}>Sotto le icone categorie</option>
         </select>
+        <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Dopo quante icone <input type="number" min="0" max="20" value="${venueInfo.degustazione_grid_split||2}" style="width:50px;" onchange="updateVenueField('degustazione_grid_split', parseInt(this.value)||2)"></label>
         <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Sfondo <input type="color" value="${venueInfo.degustazione_color||'#e3d6c4'}" onchange="updateVenueField('degustazione_color', this.value)"></label>
         <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Testo <input type="color" value="${venueInfo.degustazione_text_color||'#0b3d5c'}" onchange="updateVenueField('degustazione_text_color', this.value)"></label>
         <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem;"><input type="checkbox" ${venueInfo.degustazione_bold?'checked':''} onchange="updateVenueField('degustazione_bold', this.checked)"> Grassetto</label>
@@ -807,8 +811,10 @@ function renderVenueTab(){
             <option value="sopra_logo" ${b.position==='sopra_logo'?'selected':''}>Sopra il logo</option>
             <option value="sotto_tagline" ${!b.position||b.position==='sotto_tagline'?'selected':''}>Sotto Corralejo</option>
             <option value="sopra_griglia" ${b.position==='sopra_griglia'?'selected':''}>Sopra le icone</option>
+            <option value="meta_griglia" ${b.position==='meta_griglia'?'selected':''}>In mezzo alla griglia</option>
             <option value="sotto_griglia" ${b.position==='sotto_griglia'?'selected':''}>Sotto le icone</option>
           </select>
+          <label style="display:flex; align-items:center; gap:4px; font-size:0.75rem;">Dopo n. icone <input type="number" min="0" max="20" value="${b.grid_split||2}" style="width:46px;" onchange="updateBannerField('${b.id}','grid_split', parseInt(this.value)||2)"></label>
           <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Sfondo <input type="color" value="${b.color||'#e3f4fa'}" onchange="updateBannerField('${b.id}','color', this.value)"></label>
           <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Testo <input type="color" value="${b.text_color||'#0b3d5c'}" onchange="updateBannerField('${b.id}','text_color', this.value)"></label>
           <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;"><input type="checkbox" ${b.bold?'checked':''} onchange="updateBannerField('${b.id}','bold', this.checked)"> Grassetto</label>
