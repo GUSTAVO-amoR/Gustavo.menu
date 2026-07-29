@@ -756,6 +756,17 @@ function renderVenueTab(){
           : `<span style="display:flex; align-items:center; gap:8px;"><span class="muted" style="font-size:0.8rem;">Nascosta dalla home</span><button class="btn btn-primary btn-small" style="width:auto;" onclick="toggleStoriaVisible(true)">Ripristina</button></span>`
         }
       </div>
+      <div class="row" style="gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
+        <select onchange="updateVenueField('storia_position', this.value)" style="width:auto;">
+          <option value="sopra_logo" ${venueInfo.storia_position==='sopra_logo'?'selected':''}>Sopra il logo</option>
+          <option value="sotto_tagline" ${!venueInfo.storia_position||venueInfo.storia_position==='sotto_tagline'?'selected':''}>Posizione attuale (sotto Corralejo)</option>
+          <option value="sopra_griglia" ${venueInfo.storia_position==='sopra_griglia'?'selected':''}>Sopra le icone categorie</option>
+          <option value="sotto_griglia" ${venueInfo.storia_position==='sotto_griglia'?'selected':''}>Sotto le icone categorie</option>
+        </select>
+        <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Sfondo <input type="color" value="${venueInfo.storia_color||'#0b3d5c'}" onchange="updateVenueField('storia_color', this.value)"></label>
+        <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Testo <input type="color" value="${venueInfo.storia_text_color||'#fbfeff'}" onchange="updateVenueField('storia_text_color', this.value)"></label>
+        <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem;"><input type="checkbox" ${venueInfo.storia_bold?'checked':''} onchange="updateVenueField('storia_bold', this.checked)"> Grassetto</label>
+      </div>
       <div class="field"><label>Titolo (${LANG_LABEL[editLang]})</label><input id="v_storia_title" value="${(storiaTitle[editLang]||'').replace(/"/g,'&quot;')}"></div>
       <div class="field"><label>Testo (${LANG_LABEL[editLang]})</label><textarea id="v_storia_text" rows="5">${storiaText[editLang]||''}</textarea></div>
       <button class="btn btn-primary btn-small" onclick="saveStoria()">Salva</button>
@@ -768,6 +779,17 @@ function renderVenueTab(){
           : `<span style="display:flex; align-items:center; gap:8px;"><span class="muted" style="font-size:0.8rem;">Nascosto dalla home</span><button class="btn btn-primary btn-small" style="width:auto;" onclick="toggleDegustazioneVisible(true)">Ripristina</button></span>`
         }
       </div>
+      <div class="row" style="gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
+        <select onchange="updateVenueField('degustazione_position', this.value)" style="width:auto;">
+          <option value="sopra_logo" ${venueInfo.degustazione_position==='sopra_logo'?'selected':''}>Sopra il logo</option>
+          <option value="sotto_tagline" ${venueInfo.degustazione_position==='sotto_tagline'?'selected':''}>Sotto Corralejo</option>
+          <option value="sopra_griglia" ${!venueInfo.degustazione_position||venueInfo.degustazione_position==='sopra_griglia'?'selected':''}>Posizione attuale (sopra le icone)</option>
+          <option value="sotto_griglia" ${venueInfo.degustazione_position==='sotto_griglia'?'selected':''}>Sotto le icone categorie</option>
+        </select>
+        <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Sfondo <input type="color" value="${venueInfo.degustazione_color||'#e3d6c4'}" onchange="updateVenueField('degustazione_color', this.value)"></label>
+        <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Testo <input type="color" value="${venueInfo.degustazione_text_color||'#0b3d5c'}" onchange="updateVenueField('degustazione_text_color', this.value)"></label>
+        <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem;"><input type="checkbox" ${venueInfo.degustazione_bold?'checked':''} onchange="updateVenueField('degustazione_bold', this.checked)"> Grassetto</label>
+      </div>
       <div class="field"><label>Titolo (${LANG_LABEL[editLang]}) — includi il prezzo qui, es. "Degustazione (60€)"</label><input id="v_deg_title" value="${(degTitle[editLang]||'').replace(/"/g,'&quot;')}"></div>
       <div class="field"><label>Testo descrittivo (${LANG_LABEL[editLang]})</label><textarea id="v_deg_text" rows="4">${degText[editLang]||''}</textarea></div>
       <button class="btn btn-primary btn-small" onclick="saveDegustazione()">Salva</button>
@@ -776,12 +798,21 @@ function renderVenueTab(){
       <h3 style="margin-bottom:12px;">Banner personalizzati</h3>
       <p class="muted">Messaggi brevi mostrati in home accanto a "La nostra storia" (es. coperto, avvisi, promozioni). Aggiungili, disattivali o riordinali quando vuoi.</p>
       ${[...banners].sort((a,b)=>a.sort_order-b.sort_order).map((b,idx,arr)=>`
-        <div class="row" style="margin:10px 0; align-items:center; gap:6px; flex-wrap:wrap;">
+        <div class="row" style="margin:10px 0; align-items:center; gap:6px; flex-wrap:wrap; padding:10px; border:1px solid var(--line, #ddd); border-radius:8px;">
           <button class="btn btn-outline btn-small" style="width:auto; padding:6px 10px;" onclick="moveBanner('${b.id}',-1)" ${idx===0?'disabled':''} title="Sposta su">↑</button>
           <button class="btn btn-outline btn-small" style="width:auto; padding:6px 10px;" onclick="moveBanner('${b.id}',1)" ${idx===arr.length-1?'disabled':''} title="Sposta giù">↓</button>
           <div class="field" style="flex:1; min-width:160px;"><input id="banner_text_${b.id}" value="${(b.text[editLang]||'').replace(/"/g,'&quot;')}"></div>
+          <button class="btn btn-primary btn-small" style="width:auto;" onclick="renameBanner('${b.id}', document.getElementById('banner_text_${b.id}').value)">Salva testo</button>
+          <select onchange="updateBannerField('${b.id}','position', this.value)" style="width:auto;">
+            <option value="sopra_logo" ${b.position==='sopra_logo'?'selected':''}>Sopra il logo</option>
+            <option value="sotto_tagline" ${!b.position||b.position==='sotto_tagline'?'selected':''}>Sotto Corralejo</option>
+            <option value="sopra_griglia" ${b.position==='sopra_griglia'?'selected':''}>Sopra le icone</option>
+            <option value="sotto_griglia" ${b.position==='sotto_griglia'?'selected':''}>Sotto le icone</option>
+          </select>
+          <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Sfondo <input type="color" value="${b.color||'#e3f4fa'}" onchange="updateBannerField('${b.id}','color', this.value)"></label>
+          <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Testo <input type="color" value="${b.text_color||'#0b3d5c'}" onchange="updateBannerField('${b.id}','text_color', this.value)"></label>
+          <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;"><input type="checkbox" ${b.bold?'checked':''} onchange="updateBannerField('${b.id}','bold', this.checked)"> Grassetto</label>
           <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem; white-space:nowrap;"><input type="checkbox" ${b.active?'checked':''} onchange="toggleBannerActive('${b.id}', this.checked)"> Attivo</label>
-          <button class="btn btn-primary btn-small" style="width:auto;" onclick="renameBanner('${b.id}', document.getElementById('banner_text_${b.id}').value)">Salva</button>
           <button class="btn btn-danger" onclick="deleteBanner('${b.id}')">Elimina</button>
         </div>
       `).join('')}
@@ -924,6 +955,22 @@ async function toggleDegustazioneVisible(checked){
   const { error } = await sb.from('venue_info').update({degustazione_visible: checked}).eq('id',1);
   if(error){ showToast('Errore: '+error.message, true); return; }
   showToast(checked ? 'Degustazione visibile in home' : 'Degustazione nascosta dalla home');
+  await loadAll();
+  renderTabContent();
+}
+
+
+async function updateVenueField(field, value){
+  const { error } = await sb.from('venue_info').update({[field]: value}).eq('id',1);
+  if(error){ showToast('Errore: '+error.message, true); return; }
+  showToast('Aggiornato');
+  await loadAll();
+  renderTabContent();
+}
+async function updateBannerField(id, field, value){
+  const { error } = await sb.from('banners').update({[field]: value}).eq('id', id);
+  if(error){ showToast('Errore: '+error.message, true); return; }
+  showToast('Aggiornato');
   await loadAll();
   renderTabContent();
 }
