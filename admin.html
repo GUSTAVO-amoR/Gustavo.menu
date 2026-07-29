@@ -774,31 +774,6 @@ function renderVenueTab(){
       <button class="btn btn-primary btn-small" onclick="saveStoria()">Salva</button>
     </div>
     <div class="card">
-      <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
-        <h3 style="margin:0;">Banner "Degustazione"</h3>
-        ${degVisible
-          ? `<button class="btn btn-danger btn-small" style="width:auto;" onclick="toggleDegustazioneVisible(false)">Elimina da home</button>`
-          : `<span style="display:flex; align-items:center; gap:8px;"><span class="muted" style="font-size:0.8rem;">Nascosto dalla home</span><button class="btn btn-primary btn-small" style="width:auto;" onclick="toggleDegustazioneVisible(true)">Ripristina</button></span>`
-        }
-      </div>
-      <div class="row" style="gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
-        <select onchange="updateVenueField('degustazione_position', this.value)" style="width:auto;">
-          <option value="sopra_logo" ${venueInfo.degustazione_position==='sopra_logo'?'selected':''}>Sopra il logo</option>
-          <option value="sotto_tagline" ${venueInfo.degustazione_position==='sotto_tagline'?'selected':''}>Sotto Corralejo</option>
-          <option value="sopra_griglia" ${!venueInfo.degustazione_position||venueInfo.degustazione_position==='sopra_griglia'?'selected':''}>Posizione attuale (sopra le icone)</option>
-          <option value="meta_griglia" ${venueInfo.degustazione_position==='meta_griglia'?'selected':''}>In mezzo alla griglia</option>
-          <option value="sotto_griglia" ${venueInfo.degustazione_position==='sotto_griglia'?'selected':''}>Sotto le icone categorie</option>
-        </select>
-        <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Dopo quante icone <input type="number" min="0" max="20" value="${venueInfo.degustazione_grid_split||2}" style="width:50px;" onchange="updateVenueField('degustazione_grid_split', parseInt(this.value)||2)"></label>
-        <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Sfondo <input type="color" value="${venueInfo.degustazione_color||'#e3d6c4'}" onchange="updateVenueField('degustazione_color', this.value)"></label>
-        <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Testo <input type="color" value="${venueInfo.degustazione_text_color||'#0b3d5c'}" onchange="updateVenueField('degustazione_text_color', this.value)"></label>
-        <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem;"><input type="checkbox" ${venueInfo.degustazione_bold?'checked':''} onchange="updateVenueField('degustazione_bold', this.checked)"> Grassetto</label>
-      </div>
-      <div class="field"><label>Titolo (${LANG_LABEL[editLang]}) — includi il prezzo qui, es. "Degustazione (60€)"</label><input id="v_deg_title" value="${(degTitle[editLang]||'').replace(/"/g,'&quot;')}"></div>
-      <div class="field"><label>Testo descrittivo (${LANG_LABEL[editLang]})</label><textarea id="v_deg_text" rows="4">${degText[editLang]||''}</textarea></div>
-      <button class="btn btn-primary btn-small" onclick="saveDegustazione()">Salva</button>
-    </div>
-    <div class="card">
       <h3 style="margin-bottom:12px;">Banner personalizzati</h3>
       <p class="muted">Messaggi brevi mostrati in home accanto a "La nostra storia" (es. coperto, avvisi, promozioni). Aggiungili, disattivali o riordinali quando vuoi.</p>
       ${[...banners].sort((a,b)=>a.sort_order-b.sort_order).map((b,idx,arr)=>`
