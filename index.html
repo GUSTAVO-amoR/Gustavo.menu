@@ -843,15 +843,39 @@ function placeableHTML(position){
   BANNERS.filter(b => (b.position || 'sotto_tagline') === position).forEach(b => parts.push(bannerItemHTML(b)));
   return parts.filter(Boolean).join('');
 }
+function gridWithMidBanners(cardHtmls){
+  const midItems = [];
+  const storiaPos = VENUE.storia_position || 'sotto_tagline';
+  if(storiaPos === 'meta_griglia') midItems.push({split: VENUE.storia_grid_split||2, html: storiaItemHTML()});
+  const degPos = VENUE.degustazione_position || 'sopra_griglia';
+  if(degPos === 'meta_griglia') midItems.push({split: VENUE.degustazione_grid_split||2, html: degustazioneItemHTML()});
+  BANNERS.filter(b=>(b.position||'sotto_tagline')==='meta_griglia').forEach(b=>midItems.push({split: b.grid_split||2, html: bannerItemHTML(b)}));
+  if(midItems.length === 0) return `<div class="section-grid">${cardHtmls.join('')}</div>`;
+  midItems.sort((a,b)=>a.split-b.split);
+  const parts = [];
+  let lastSplit = 0;
+  midItems.forEach(item=>{
+    const split = Math.max(0, Math.min(cardHtmls.length, item.split));
+    if(split > lastSplit){
+      parts.push(`<div class="section-grid">${cardHtmls.slice(lastSplit, split).join('')}</div>`);
+    }
+    if(item.html) parts.push(`<div class="home-links-row">${item.html}</div>`);
+    lastSplit = split;
+  });
+  if(lastSplit < cardHtmls.length){
+    parts.push(`<div class="section-grid">${cardHtmls.slice(lastSplit).join('')}</div>`);
+  }
+  return parts.join('');
+}
 function renderHome(){
-  const cards = Object.keys(MENU).map(key=>{
+  const cardHtmls = Object.keys(MENU).map(key=>{
     const sec = MENU[key];
     const iconSrc = CATEGORY_ICON_DATA[key];
     return `<button class="section-card" onclick="openSection('${key}')" aria-label="${tr(sec.title)}">
       ${iconSrc ? `<img class="section-card-icon${key==='bebidas' ? ' icon-bevande' : ''}${key==='antipasti' ? ' icon-large' : ''}${key==='postres' ? ' icon-large' : ''}${key==='pizze_fritte' ? ' icon-montanara' : ''}${key==='Carta dei Vini' ? ' icon-vini' : ''}${key==='Distelleria' ? ' icon-distelleria' : ''}${key==='Cocktail' ? ' icon-cocktail' : ''}" src="${iconSrc}" alt="">` : ''}
       <div class="label">${tr(sec.title)}</div>
     </button>`;
-  }).join('');
+  });
 
   root.innerHTML = `
     <div class="home">
@@ -866,7 +890,7 @@ function renderHome(){
         <div class="home-links-row">${placeableHTML('sotto_tagline')}</div>
 
         <div class="home-links-row">${placeableHTML('sopra_griglia')}</div>
-        <div class="section-grid">${cards}</div>
+        ${gridWithMidBanners(cardHtmls)}
         <div class="home-links-row">${placeableHTML('sotto_griglia')}</div>
         <div class="home-footnote">${t('footnote')}</div>
       </div>
