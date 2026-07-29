@@ -116,7 +116,7 @@ const ALLERGENS = ["gluten","lattosio","frutta a guscio","uova","pesce","crostac
 const ALLERGEN_LABELS_IT = { gluten:"Glutine", lattosio:"Latte/Lattosio", "frutta a guscio":"Frutta a guscio", uova:"Uova", pesce:"Pesce", crostacei:"Crostacei", molluschi:"Molluschi", solfiti:"Solfiti", arachidi:"Arachidi", soia:"Soia", sedano:"Sedano", senape:"Senape", sesamo:"Sesamo", lupini:"Lupini" };
 
 let session = null;
-let categories = [], subcategories = [], menuItems = [], venueInfo = null;
+let categories = [], subcategories = [], menuItems = [], venueInfo = null, banners = [];
 let currentTab = 'items';
 let editLang = 'it';
 const app = document.getElementById('app');
@@ -341,16 +341,18 @@ async function doLogout(){
 }
 
 async function loadAll(){
-  const [catsRes, subsRes, itemsRes, venueRes] = await Promise.all([
+  const [catsRes, subsRes, itemsRes, venueRes, bannersRes] = await Promise.all([
     sb.from('categories').select('*').order('sort_order'),
     sb.from('subcategories').select('*').order('sort_order'),
     sb.from('menu_items').select('*').order('sort_order'),
-    sb.from('venue_info').select('*').eq('id',1).maybeSingle()
+    sb.from('venue_info').select('*').eq('id',1).maybeSingle(),
+    sb.from('banners').select('*').order('sort_order')
   ]);
   categories = catsRes.data || [];
   subcategories = subsRes.data || [];
   menuItems = itemsRes.data || [];
   venueInfo = venueRes.data || { address:{}, hours:{}, phone:{} };
+  banners = bannersRes.data || [];
 }
 
 function renderShell(){
@@ -756,6 +758,21 @@ function renderVenueTab(){
       <div class="field"><label>Testo descrittivo (${LANG_LABEL[editLang]})</label><textarea id="v_deg_text" rows="4">${degText[editLang]||''}</textarea></div>
       <button class="btn btn-primary btn-small" onclick="saveDegustazione()">Salva</button>
     </div>
+    <div class="card">
+      <h3 style="margin-bottom:12px;">Banner personalizzati</h3>
+      <p class="muted">Messaggi brevi mostrati in home accanto a "La nostra storia" (es. coperto, avvisi, promozioni). Aggiungili, disattivali o riordinali quando vuoi.</p>
+      ${[...banners].sort((a,b)=>a.sort_order-b.sort_order).map((b,idx,arr)=>`
+        <div class="row" style="margin:10px 0; align-items:center; gap:6px; flex-wrap:wrap;">
+          <button class="btn btn-outline btn-small" style="width:auto; padding:6px 10px;" onclick="moveBanner('${b.id}',-1)" ${idx===0?'disabled':''} title="Sposta su">↑</button>
+          <button class="btn btn-outline btn-small" style="width:auto; padding:6px 10px;" onclick="moveBanner('${b.id}',1)" ${idx===arr.length-1?'disabled':''} title="Sposta giù">↓</button>
+          <div class="field" style="flex:1; min-width:160px;"><input id="banner_text_${b.id}" value="${(b.text[editLang]||'').replace(/"/g,'&quot;')}"></div>
+          <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem; white-space:nowrap;"><input type="checkbox" ${b.active?'checked':''} onchange="toggleBannerActive('${b.id}', this.checked)"> Attivo</label>
+          <button class="btn btn-primary btn-small" style="width:auto;" onclick="renameBanner('${b.id}', document.getElementById('banner_text_${b.id}').value)">Salva</button>
+          <button class="btn btn-danger" onclick="deleteBanner('${b.id}')">Elimina</button>
+        </div>
+      `).join('')}
+      <button class="btn btn-primary btn-small" style="margin-top:10px;" onclick="addBanner()">+ Nuovo banner</button>
+    </div>
   `;
 }
 
@@ -814,6 +831,71 @@ async function saveVenue(){
   showToast('Info locale aggiornate');
   await loadAll();
   renderTabContent();
+}
+
+
+async function moveBanner(id, direction){
+  const sorted = [...banners].sort((a,b)=>a.sort_order-b.sort_order);
+  const idx = sorted.findIndex(b=>b.id===id);
+  const swapIdx = idx + direction;
+  if(swapIdx < 0 || swapIdx >= sorted.length) return;
+  const a = sorted[idx], b = sorted[swapIdx];
+  const tmp = a.sort_order;
+  const { error: e1 } = await sb.from('banners').update({sort_order: b.sort_order}).eq('id', a.id);
+  const { error: e2 } = await sb.from('banners').update({sort_order: tmp}).eq('id', b.id);
+  if(e1 || e2){ showToast('Errore: ' + ((e1||e2).message), true); return; }
+  showToast('Ordine aggiornato');
+  await loadAll();
+  renderTabContent();
+}
+
+async function toggleBannerActive(id, checked){
+  const { error } = await sb.from('banners').update({active: checked}).eq('id', id);
+  if(error){ showToast('Errore: '+error.message, true); return; }
+  showToast(checked ? 'Banner attivato' : 'Banner disattivato');
+  await loadAll();
+  renderTabContent();
+}
+
+async function renameBanner(id, value){
+  const banner = banners.find(b=>b.id===id);
+  banner.text[editLang] = value;
+  if(editLang === 'it'){
+    showToast('Traduzione automatica in corso…');
+    await autoTranslateObj(banner, ['text']);
+  }
+  const { error } = await sb.from('banners').update({text: banner.text}).eq('id', id);
+  if(error){ showToast('Errore: '+error.message, true); return; }
+  showToast('Banner aggiornato');
+  await loadAll();
+}
+
+async function deleteBanner(id){
+  showConfirmModal('Eliminare questo banner?', async ()=>{
+    const { error } = await sb.from('banners').delete().eq('id', id);
+    if(error){ showToast('Errore: '+error.message, true); return; }
+    showToast('Banner eliminato');
+    await loadAll();
+    renderTabContent();
+  });
+}
+
+function addBanner(){
+  showPromptModal('Nuovo banner', [
+    {id:'nb_text', label:'Testo (in italiano)'}
+  ], async (values)=>{
+    const errModal = document.getElementById('genericModalError');
+    if(!values.nb_text){ errModal.textContent = 'Compila il campo.'; return; }
+    closeGenericModal();
+    const wrapper = {text:{it:values.nb_text,en:'',es:'',de:'',fr:''}};
+    showToast('Traduzione automatica in corso…');
+    await autoTranslateObj(wrapper, ['text']);
+    const { error } = await sb.from('banners').insert({text: wrapper.text, active:true, sort_order:(banners.length+1)*10});
+    if(error){ showToast('Errore: '+error.message, true); return; }
+    showToast('Banner creato e tradotto automaticamente');
+    await loadAll();
+    renderTabContent();
+  }, 'Crea');
 }
 
 init();
