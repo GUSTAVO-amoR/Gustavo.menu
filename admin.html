@@ -749,18 +749,24 @@ function renderVenueTab(){
       <button class="btn btn-primary btn-small" onclick="saveVenue()">Salva</button>
     </div>
     <div class="card">
-      <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
         <h3 style="margin:0;">"La Nostra Storia"</h3>
-        <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem; white-space:nowrap;"><input type="checkbox" ${storiaVisible?'checked':''} onchange="toggleStoriaVisible(this.checked)"> Visibile in home</label>
+        ${storiaVisible
+          ? `<button class="btn btn-danger btn-small" style="width:auto;" onclick="toggleStoriaVisible(false)">Elimina da home</button>`
+          : `<span style="display:flex; align-items:center; gap:8px;"><span class="muted" style="font-size:0.8rem;">Nascosta dalla home</span><button class="btn btn-primary btn-small" style="width:auto;" onclick="toggleStoriaVisible(true)">Ripristina</button></span>`
+        }
       </div>
       <div class="field"><label>Titolo (${LANG_LABEL[editLang]})</label><input id="v_storia_title" value="${(storiaTitle[editLang]||'').replace(/"/g,'&quot;')}"></div>
       <div class="field"><label>Testo (${LANG_LABEL[editLang]})</label><textarea id="v_storia_text" rows="5">${storiaText[editLang]||''}</textarea></div>
       <button class="btn btn-primary btn-small" onclick="saveStoria()">Salva</button>
     </div>
     <div class="card">
-      <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
         <h3 style="margin:0;">Banner "Degustazione"</h3>
-        <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem; white-space:nowrap;"><input type="checkbox" ${degVisible?'checked':''} onchange="toggleDegustazioneVisible(this.checked)"> Visibile in home</label>
+        ${degVisible
+          ? `<button class="btn btn-danger btn-small" style="width:auto;" onclick="toggleDegustazioneVisible(false)">Elimina da home</button>`
+          : `<span style="display:flex; align-items:center; gap:8px;"><span class="muted" style="font-size:0.8rem;">Nascosto dalla home</span><button class="btn btn-primary btn-small" style="width:auto;" onclick="toggleDegustazioneVisible(true)">Ripristina</button></span>`
+        }
       </div>
       <div class="field"><label>Titolo (${LANG_LABEL[editLang]}) — includi il prezzo qui, es. "Degustazione (60€)"</label><input id="v_deg_title" value="${(degTitle[editLang]||'').replace(/"/g,'&quot;')}"></div>
       <div class="field"><label>Testo descrittivo (${LANG_LABEL[editLang]})</label><textarea id="v_deg_text" rows="4">${degText[editLang]||''}</textarea></div>
