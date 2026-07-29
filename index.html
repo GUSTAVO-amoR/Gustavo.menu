@@ -935,12 +935,13 @@ function venueInfoHTML(){
   `;
 }
 
-function renderItemRow(it, i, crumb){
+function renderItemRow(it, i, crumb, forceIt){
+  const itemName = forceIt ? (it.name.it || tr(it.name)) : tr(it.name);
   return `
     <div class="item" style="animation-delay:${(i||0)*0.09}s" onclick="toggleTap(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTap(this);}">
       <div class="item-main">
         ${crumb ? `<p class="item-crumb">${crumb}</p>` : ''}
-        <p class="item-name">${tr(it.name)}${it.recommended ? `<span class="badge-recommended">${t('recommended')}</span>` : ''}</p>
+        <p class="item-name">${itemName}${it.recommended ? `<span class="badge-recommended">${t('recommended')}</span>` : ''}</p>
         <p class="item-ingredients">${tr(it.ingredients)}</p>
         ${it.allergens && it.allergens.length ? `<div class="allergen-row">${it.allergens.map(a=>`<span class="allergen-icon" title="${UI[state.lang].allergenLabels[a]||a}" aria-label="${UI[state.lang].allergenLabels[a]||a}">${allergenIcon(a)}</span>`).join('')}</div>` : ''}
       </div>
@@ -975,6 +976,7 @@ function renderSection(){
   const isGinTab = state.section === 'Distelleria';
   const specialNoteKey = isCocktailTab ? 'cocktailsOnRequestNote' : (isGinTab ? 'ginMixerNote' : null);
   let lastGroupLabel = null;
+  const forceItalianNames = state.section === 'pizze_fritte';
   const itemsHTML = items.length ? items.map((it,i)=>{
     const currentLabel = it.group_label ? tr(it.group_label) : null;
     let groupHeader = '';
@@ -982,7 +984,7 @@ function renderSection(){
       groupHeader = `<div class="item-group-label">${currentLabel}</div>`;
     }
     lastGroupLabel = currentLabel;
-    return groupHeader + renderItemRow(it,i);
+    return groupHeader + renderItemRow(it,i,undefined,forceItalianNames);
   }).join('') : `<div class="empty-note">${t('empty')}</div>`;
 
   root.innerHTML = `
