@@ -738,6 +738,8 @@ function renderVenueTab(){
   const degText = venueInfo.degustazione_text || {};
   const storiaTitle = venueInfo.storia_title || {};
   const storiaText = venueInfo.storia_text || {};
+  const storiaVisible = venueInfo.storia_visible !== false;
+  const degVisible = venueInfo.degustazione_visible !== false;
   return `
     ${langTabsHTML()}
     <div class="card">
@@ -747,13 +749,19 @@ function renderVenueTab(){
       <button class="btn btn-primary btn-small" onclick="saveVenue()">Salva</button>
     </div>
     <div class="card">
-      <h3 style="margin-bottom:12px;">"La Nostra Storia"</h3>
+      <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">"La Nostra Storia"</h3>
+        <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem; white-space:nowrap;"><input type="checkbox" ${storiaVisible?'checked':''} onchange="toggleStoriaVisible(this.checked)"> Visibile in home</label>
+      </div>
       <div class="field"><label>Titolo (${LANG_LABEL[editLang]})</label><input id="v_storia_title" value="${(storiaTitle[editLang]||'').replace(/"/g,'&quot;')}"></div>
       <div class="field"><label>Testo (${LANG_LABEL[editLang]})</label><textarea id="v_storia_text" rows="5">${storiaText[editLang]||''}</textarea></div>
       <button class="btn btn-primary btn-small" onclick="saveStoria()">Salva</button>
     </div>
     <div class="card">
-      <h3 style="margin-bottom:12px;">Banner "Degustazione"</h3>
+      <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">Banner "Degustazione"</h3>
+        <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem; white-space:nowrap;"><input type="checkbox" ${degVisible?'checked':''} onchange="toggleDegustazioneVisible(this.checked)"> Visibile in home</label>
+      </div>
       <div class="field"><label>Titolo (${LANG_LABEL[editLang]}) — includi il prezzo qui, es. "Degustazione (60€)"</label><input id="v_deg_title" value="${(degTitle[editLang]||'').replace(/"/g,'&quot;')}"></div>
       <div class="field"><label>Testo descrittivo (${LANG_LABEL[editLang]})</label><textarea id="v_deg_text" rows="4">${degText[editLang]||''}</textarea></div>
       <button class="btn btn-primary btn-small" onclick="saveDegustazione()">Salva</button>
@@ -896,6 +904,22 @@ function addBanner(){
     await loadAll();
     renderTabContent();
   }, 'Crea');
+}
+
+
+async function toggleStoriaVisible(checked){
+  const { error } = await sb.from('venue_info').update({storia_visible: checked}).eq('id',1);
+  if(error){ showToast('Errore: '+error.message, true); return; }
+  showToast(checked ? 'Storia visibile in home' : 'Storia nascosta dalla home');
+  await loadAll();
+  renderTabContent();
+}
+async function toggleDegustazioneVisible(checked){
+  const { error } = await sb.from('venue_info').update({degustazione_visible: checked}).eq('id',1);
+  if(error){ showToast('Errore: '+error.message, true); return; }
+  showToast(checked ? 'Degustazione visibile in home' : 'Degustazione nascosta dalla home');
+  await loadAll();
+  renderTabContent();
 }
 
 init();
