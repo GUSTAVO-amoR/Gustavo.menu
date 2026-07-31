@@ -317,10 +317,7 @@
     width:87px; height:87px;
   }
   .section-card-icon.icon-taglieri{
-    width:120px; height:120px;
-  }
-  .section-card.label-top{
-    flex-direction:column-reverse;
+    width:105px; height:105px;
   }
   .section-card:hover .section-card-icon{ transform:scale(1.08); }
   .section-card .label{
@@ -878,7 +875,7 @@ function renderHome(){
   const cardHtmls = Object.keys(MENU).map(key=>{
     const sec = MENU[key];
     const iconSrc = CATEGORY_ICON_DATA[key];
-    return `<button class="section-card${key==='Taglieri' ? ' label-top' : ''}" onclick="openSection('${key}')" aria-label="${tr(sec.title)}">
+    return `<button class="section-card" onclick="openSection('${key}')" aria-label="${tr(sec.title)}">
       ${iconSrc ? `<img class="section-card-icon${key==='bebidas' ? ' icon-bevande' : ''}${key==='antipasti' ? ' icon-large' : ''}${key==='postres' ? ' icon-large' : ''}${key==='pizze_fritte' ? ' icon-montanara' : ''}${key==='Carta dei Vini' ? ' icon-vini' : ''}${key==='Distelleria' ? ' icon-distelleria' : ''}${key==='Cocktail' ? ' icon-cocktail' : ''}${key==='Taglieri' ? ' icon-taglieri' : ''}" src="${iconSrc}" alt="">` : ''}
       <div class="label">${tr(sec.title)}</div>
     </button>`;
