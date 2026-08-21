@@ -2,961 +2,616 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gustavo — Gestione Menu</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500,600,700;1,400&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gustavo — Gestione</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   :root{
-    --ink:#0b3d5c;
-    --ink-soft:#2f5c7a;
-    --celeste:#bfe6f5;
-    --celeste-soft:#e3f4fa;
-    --white:#fbfeff;
-    --line:rgba(11,61,92,0.18);
-    --danger:#b3402f;
-    --success:#2f7a4f;
+    --navy:#0b3d5c; --navy-dark:#082c43; --cream:#fcf3e8; --white:#ffffff;
+    --border:#e4e2dd; --text:#1f2d3a; --muted:#7a8794; --danger:#c0392b; --danger-bg:#fdecea;
+    --ok:#1e824c; --radius:12px; --shadow:0 4px 18px rgba(11,61,92,.09);
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    font-family:'Jost', sans-serif;
-    background:linear-gradient(180deg,var(--white) 0%,var(--celeste-soft) 100%);
-    color:var(--ink);
-    min-height:100vh;
-  }
-  h1,h2,h3{font-family:'Cormorant Garamond',serif; margin:0;}
-  button{font-family:inherit; cursor:pointer;}
-  input,textarea,select{font-family:inherit;}
+  body{margin:0;background:var(--cream);color:var(--text);font-family:var(--sans);}
+  h1,h2,h3{font-family:var(--serif);color:var(--navy);margin:0;}
+  button{font-family:var(--sans);cursor:pointer;}
+  input,textarea,select{font-family:var(--sans);}
+  .hidden{display:none !important;}
 
-  .login-screen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;}
-  .login-box{
-    background:var(--white); border:1px solid var(--line); border-radius:16px;
-    padding:40px 34px; width:100%; max-width:380px; box-shadow:0 20px 50px rgba(11,61,92,0.12);
-    text-align:center;
-  }
-  .login-box h1{font-size:2rem; margin-bottom:4px;}
-  .login-box .sub{font-size:0.78rem; letter-spacing:2px; text-transform:uppercase; color:var(--ink-soft); margin-bottom:28px;}
-  .field{margin-bottom:16px; text-align:left;}
-  .field label{display:block; font-size:0.72rem; letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); margin-bottom:6px;}
-  .field input, .field textarea, .field select{
-    width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px;
-    background:var(--white); color:var(--ink); font-size:0.92rem; outline:none;
-  }
-  .field input:focus, .field textarea:focus, .field select:focus{border-color:var(--ink-soft);}
-  .btn{display:inline-block; border:none; border-radius:999px; padding:11px 22px; font-size:0.85rem; font-weight:600; letter-spacing:0.5px; transition:all .2s ease;}
-  .btn-primary{background:var(--ink); color:var(--white); width:100%;}
-  .btn-primary:hover{background:var(--ink-soft);}
-  .btn-outline{background:transparent; border:1px solid var(--ink-soft); color:var(--ink-soft);}
-  .btn-outline:hover{background:var(--celeste-soft);}
-  .btn-danger{background:transparent; border:1px solid var(--danger); color:var(--danger); font-size:0.75rem; padding:7px 14px;}
-  .btn-danger:hover{background:var(--danger); color:white;}
-  .btn-small{font-size:0.75rem; padding:7px 14px; width:auto;}
-  .login-error{color:var(--danger); font-size:0.82rem; margin-top:10px; min-height:18px;}
+  /* ---------- Login ---------- */
+  #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;}
+  #loginBox{background:var(--white);padding:36px 32px;border-radius:var(--radius);box-shadow:var(--shadow);width:320px;}
+  #loginBox h1{font-size:26px;margin-bottom:4px;}
+  #loginBox p{color:var(--muted);font-size:13px;margin:0 0 20px;}
+  #loginBox input{width:100%;padding:10px 12px;margin-bottom:12px;border:1px solid var(--border);border-radius:8px;font-size:14px;}
+  #loginBox button{width:100%;padding:11px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-weight:600;font-size:14px;}
+  #loginErr{color:var(--danger);font-size:13px;margin-top:8px;min-height:16px;}
 
-  .topbar{
-    position:sticky; top:0; z-index:10;
-    background:rgba(251,254,255,0.92); backdrop-filter:blur(8px);
-    border-bottom:1px solid var(--line);
-    display:flex; align-items:center; justify-content:space-between;
-    padding:16px 24px;
-  }
-  .topbar h1{font-size:1.6rem;}
-  .topbar .who{font-size:0.75rem; color:var(--ink-soft);}
-  .tabs{display:flex; gap:6px; padding:16px 24px 0; flex-wrap:wrap; max-width:980px; margin:0 auto;}
-  .tab-btn{background:transparent; border:1px solid var(--ink-soft); color:var(--ink-soft); border-radius:999px; padding:9px 18px; font-size:0.85rem; font-weight:500;}
-  .tab-btn.active{background:var(--ink); color:var(--white); border-color:var(--ink);}
-  .content{max-width:980px; margin:0 auto; padding:24px;}
+  /* ---------- Top bar ---------- */
+  #topbar{position:sticky;top:0;z-index:40;background:rgba(252,243,232,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--border);}
+  #topbar-inner{max-width:1180px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+  #brand{font-size:22px;flex-shrink:0;}
+  #brand span{color:var(--muted);font-size:14px;font-family:var(--sans);}
+  #tabs{display:flex;gap:6px;}
+  .tabbtn{padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:#fff;color:var(--navy);font-size:14px;font-weight:600;}
+  .tabbtn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  #searchWrap{flex:1;min-width:180px;position:relative;}
+  #searchInput{width:100%;padding:9px 14px 9px 34px;border-radius:20px;border:1px solid var(--border);font-size:14px;background:#fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="%237a8794" stroke-width="2"><circle cx="6.5" cy="6.5" r="5.5"/><line x1="10.5" y1="10.5" x2="15" y2="15"/></svg>') no-repeat 10px center;}
+  #langs{display:flex;gap:4px;}
+  .langbtn{padding:6px 10px;border-radius:14px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:700;color:var(--navy);}
+  .langbtn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  #userInfo{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);}
+  #logoutBtn{padding:7px 14px;border-radius:16px;border:1px solid var(--border);background:#fff;font-size:13px;}
 
-  .card{background:var(--white); border:1px solid var(--line); border-radius:14px; padding:20px; margin-bottom:16px;}
-  .card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:10px;}
-  .card-head h3{font-size:1.3rem;}
-  .muted{color:var(--ink-soft); font-size:0.85rem;}
-  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
-  .lang-tabs{display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;}
-  .lang-tab{background:var(--celeste-soft); border:1px solid var(--line); color:var(--ink-soft); border-radius:6px; padding:5px 10px; font-size:0.75rem; font-weight:600;}
-  .lang-tab.active{background:var(--ink); color:var(--white); border-color:var(--ink);}
-  .allergen-check{display:inline-flex; align-items:center; gap:4px; font-size:0.78rem; margin-right:10px; color:var(--ink-soft);}
-  .item-photo{width:60px; height:60px; object-fit:cover; border-radius:8px; border:1px solid var(--line);}
-  .item-photo-placeholder{width:60px; height:60px; border-radius:8px; border:1px dashed var(--line); display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:0.65rem; text-align:center;}
-  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--ink); color:white; padding:12px 22px; border-radius:999px; font-size:0.85rem; z-index:100; opacity:0; pointer-events:none; transition:opacity .3s ease;}
-  .toast.show{opacity:1;}
-  .toast.error{background:var(--danger);}
+  #main{max-width:1180px;margin:0 auto;padding:20px;}
 
-  .modal-overlay-generic{
-    position:fixed; inset:0; background:rgba(11,61,92,0.4); z-index:200;
-    display:flex; align-items:center; justify-content:center; padding:20px;
+  /* ---------- Piatti layout ---------- */
+  #piattiLayout{display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start;}
+  #catNav{position:sticky;top:82px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:10px;max-height:calc(100vh - 100px);overflow:auto;}
+  #catNav a{display:block;padding:8px 10px;border-radius:8px;color:var(--text);text-decoration:none;font-size:13px;font-weight:600;margin-bottom:2px;}
+  #catNav a:hover{background:var(--cream);}
+  #catNav .subnavlink{font-weight:400;font-size:12px;padding-left:20px;color:var(--muted);}
+
+  details.catAcc{background:#fff;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:14px;overflow:hidden;scroll-margin-top:80px;}
+  details.catAcc>summary{list-style:none;cursor:pointer;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;font-family:var(--serif);font-size:19px;color:var(--navy);}
+  details.catAcc>summary::-webkit-details-marker{display:none;}
+  details.catAcc>summary .count{font-family:var(--sans);font-size:12px;color:var(--muted);font-weight:600;}
+  .catBody{padding:0 18px 16px;}
+  .subGroup{margin-top:10px;}
+  .subGroup h4{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--border);}
+  .subGroup:first-child h4{border-top:none;padding-top:0;}
+
+  .dishRow{display:flex;align-items:center;gap:12px;padding:9px 8px;border-radius:8px;}
+  .dishRow:hover{background:var(--cream);}
+  .dishRow.dimmed{display:none;}
+  .dishThumb{width:44px;height:44px;border-radius:8px;object-fit:cover;background:#f1efe9;flex-shrink:0;border:1px solid var(--border);}
+  .dishThumb.empty{display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);text-align:center;}
+  .dishInfo{flex:1;min-width:0;}
+  .dishInfo .name{font-weight:700;font-size:14.5px;}
+  .dishInfo .meta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dishActions{display:flex;gap:6px;flex-shrink:0;}
+  .miniBtn{padding:6px 12px;border-radius:14px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--navy);}
+  .miniBtn.danger{color:var(--danger);border-color:#f0d0cc;}
+  .addRowBtn{margin-top:10px;padding:8px 14px;border-radius:16px;border:1px dashed var(--navy);background:transparent;color:var(--navy);font-size:13px;font-weight:600;}
+
+  /* ---------- Drawer ---------- */
+  #overlay{position:fixed;inset:0;background:rgba(11,32,48,.45);z-index:80;display:none;}
+  #overlay.show{display:block;}
+  #drawer{position:fixed;top:0;right:0;height:100%;width:460px;max-width:94vw;background:#fff;z-index:90;box-shadow:-8px 0 30px rgba(0,0,0,.15);transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;}
+  #drawer.show{transform:translateX(0);}
+  #drawerHead{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+  #drawerHead h2{font-size:19px;}
+  #drawerClose{background:none;border:none;font-size:22px;color:var(--muted);line-height:1;}
+  #drawerBody{padding:18px 20px;overflow-y:auto;flex:1;}
+  #drawerFoot{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);margin-bottom:5px;}
+  .field input[type=text],.field input[type=number],.field textarea,.field select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:14px;}
+  .field textarea{min-height:56px;resize:vertical;}
+  .drawerLangs{display:flex;gap:4px;margin-bottom:16px;}
+  .allergenGrid{display:flex;flex-wrap:wrap;gap:6px;}
+  .allergenChip{padding:6px 11px;border-radius:14px;border:1px solid var(--border);font-size:12.5px;background:#fff;color:var(--text);}
+  .allergenChip.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .photoPreview{width:100%;height:140px;border-radius:8px;object-fit:cover;background:#f1efe9;margin-bottom:8px;display:none;}
+  .photoPreview.show{display:block;}
+  .checkRow{display:flex;align-items:center;gap:8px;font-size:13.5px;}
+  .btnPrimary{flex:1;padding:11px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:14px;}
+  .btnGhost{padding:11px 16px;background:#fff;border:1px solid var(--border);border-radius:8px;font-weight:600;font-size:14px;color:var(--text);}
+
+  /* ---------- Categorie tab ---------- */
+  .catCard{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px;}
+  .catCardHead{display:flex;align-items:center;gap:8px;}
+  .catCardHead input{flex:1;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:15px;font-weight:700;color:var(--navy);}
+  .arrowBtn{padding:6px 9px;border-radius:6px;border:1px solid var(--border);background:#fff;}
+  .subRow{display:flex;align-items:center;gap:8px;margin-top:8px;padding-left:14px;}
+  .subRow input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13.5px;}
+  .subKey{font-size:11px;color:var(--muted);margin-top:4px;}
+
+  /* ---------- Info tab ---------- */
+  .infoCard{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;}
+  .infoCard h3{margin-bottom:12px;}
+  .rowFields{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
+  .rowFields .field{flex:1;min-width:140px;}
+
+  /* ---------- Toast ---------- */
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:12px 22px;border-radius:24px;font-size:14px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:all .25s ease;z-index:200;}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @media (max-width:820px){
+    #piattiLayout{grid-template-columns:1fr;}
+    #catNav{position:static;max-height:none;}
+    #drawer{width:100vw;max-width:100vw;}
   }
-  .modal-box{
-    background:var(--white); border-radius:16px; padding:28px;
-    width:100%; max-width:420px; box-shadow:0 20px 50px rgba(0,0,0,0.25);
-  }
-  .modal-error{color:var(--danger); font-size:0.82rem; min-height:16px; margin-top:6px;}
-  .section-title{font-size:1.5rem; margin:28px 0 14px;}
-  .section-title:first-child{margin-top:0;}
-  .empty{color:var(--ink-soft); font-style:italic; text-align:center; padding:30px;}
-  hr.sep{border:none; border-top:1px solid var(--line); margin:14px 0;}
-  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
-  @media (max-width:600px){ .grid2{grid-template-columns:1fr;} }
 </style>
 </head>
 <body>
 
-<div id="app"></div>
-<div class="toast" id="toast"></div>
+<div id="loginScreen">
+  <div id="loginBox">
+    <h1>Gustavo</h1>
+    <p>Accedi per gestire il menu</p>
+    <input id="loginEmail" type="text" placeholder="Email" autocomplete="username">
+    <input id="loginPass" type="password" placeholder="Password" autocomplete="current-password">
+    <button id="loginBtn">Accedi</button>
+    <div id="loginErr"></div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <div id="topbar">
+    <div id="topbar-inner">
+      <div id="brand">Gustavo <span>· Gestione</span></div>
+      <div id="tabs">
+        <button class="tabbtn" data-tab="piatti">Piatti &amp; Drink</button>
+        <button class="tabbtn" data-tab="categorie">Categorie</button>
+        <button class="tabbtn" data-tab="info">Info Locale</button>
+      </div>
+      <div id="searchWrap" class="hidden">
+        <input id="searchInput" type="text" placeholder="Cerca un piatto...">
+      </div>
+      <div id="langs"></div>
+      <div id="userInfo"><span id="userEmail"></span><button id="logoutBtn">Esci</button></div>
+    </div>
+  </div>
+  <div id="main">
+    <div id="tabPiatti"></div>
+    <div id="tabCategorie" class="hidden"></div>
+    <div id="tabInfo" class="hidden"></div>
+  </div>
+</div>
+
+<div id="overlay"></div>
+<div id="drawer">
+  <div id="drawerHead"><h2 id="drawerTitle">Voce</h2><button id="drawerClose">&times;</button></div>
+  <div id="drawerBody"></div>
+  <div id="drawerFoot">
+    <button class="btnPrimary" id="drawerSave">Salva</button>
+    <button class="btnGhost" id="drawerCancel">Annulla</button>
+  </div>
+</div>
+<div id="toast"></div>
 
 <script>
 const SUPABASE_URL = "https://eirqridakadiwxzfctih.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpcnFyaWRha2FkaXd4emZjdGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4Njg1MzUsImV4cCI6MjA5OTQ0NDUzNX0.m403t9H_kfEcra5Xep8iurQ5QuFMv1vfA-s3o8dEsSA";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const LANGS = ["it","en","es","de","fr"];
-const LANG_LABEL = { it:"IT", en:"EN", es:"ES", de:"DE", fr:"FR" };
-const ALLERGENS = ["gluten","lattosio","frutta a guscio","uova","pesce","crostacei","molluschi","solfiti","arachidi","soia","sedano","senape","sesamo","lupini"];
-const ALLERGEN_LABELS_IT = { gluten:"Glutine", lattosio:"Latte/Lattosio", "frutta a guscio":"Frutta a guscio", uova:"Uova", pesce:"Pesce", crostacei:"Crostacei", molluschi:"Molluschi", solfiti:"Solfiti", arachidi:"Arachidi", soia:"Soia", sedano:"Sedano", senape:"Senape", sesamo:"Sesamo", lupini:"Lupini" };
+const LANGS = [
+  {key:'it', label:'IT'}, {key:'en', label:'EN'}, {key:'es', label:'ES'},
+  {key:'de', label:'DE'}, {key:'fr', label:'FR'}
+];
+const ALLERGENS = [
+  {key:'gluten', label:'Glutine'}, {key:'lattosio', label:'Latte/Lattosio'},
+  {key:'frutta a guscio', label:'Frutta a guscio'}, {key:'uova', label:'Uova'},
+  {key:'pesce', label:'Pesce'}, {key:'crostacei', label:'Crostacei'},
+  {key:'molluschi', label:'Molluschi'}, {key:'solfiti', label:'Solfiti'},
+  {key:'arachidi', label:'Arachidi'}, {key:'soia', label:'Soia'},
+  {key:'sedano', label:'Sedano'}, {key:'senape', label:'Senape'},
+  {key:'sesamo', label:'Sesamo'}, {key:'lupini', label:'Lupini'}
+];
 
-let session = null;
-let categories = [], subcategories = [], menuItems = [], venueInfo = null, banners = [];
-let currentTab = 'items';
-let editLang = 'it';
-const app = document.getElementById('app');
+let state = {
+  lang: 'it', tab: 'piatti', search: '',
+  categories: [], subcategories: [], items: [], venue: null, banners: [],
+  drawerMode: null, drawerData: null, pendingPhotoFile: null
+};
 
-function showToast(msg, isError){
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show' + (isError ? ' error' : '');
-  setTimeout(()=>{ t.className = 'toast'; }, 2800);
+function t(jsonb, lang){ if(!jsonb) return ''; return jsonb[lang||state.lang] || jsonb['it'] || Object.values(jsonb)[0] || ''; }
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(window.__toastT);
+  window.__toastT = setTimeout(()=>el.classList.remove('show'), 2200);
 }
+function esc(s){ return (s||'').replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
-/* ========================================================================
-   MODALI PERSONALIZZATE (al posto di prompt/confirm/alert nativi del browser)
-   ======================================================================== */
-function closeGenericModal(){
-  const el = document.getElementById('genericModalOverlay');
-  if(el) el.remove();
+/* ---------------- AUTH ---------------- */
+async function initAuth(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session){ showApp(session); } else { showLogin(); }
 }
-
-function showConfirmModal(message, onConfirm){
-  closeGenericModal();
-  const ov = document.createElement('div');
-  ov.id = 'genericModalOverlay';
-  ov.className = 'modal-overlay-generic';
-  ov.innerHTML = `
-    <div class="modal-box">
-      <p style="margin:0 0 22px; font-size:0.95rem; color:var(--ink); line-height:1.5;">${message}</p>
-      <div class="row" style="justify-content:flex-end;">
-        <button class="btn btn-outline btn-small" onclick="closeGenericModal()">Annulla</button>
-        <button class="btn btn-danger btn-small" id="genericModalConfirmBtn" style="border:none; background:var(--danger); color:#fff;">Conferma</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(ov);
-  document.getElementById('genericModalConfirmBtn').onclick = ()=>{ closeGenericModal(); onConfirm(); };
+function showLogin(){
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('app').classList.add('hidden');
 }
-
-function showPromptModal(title, fields, onSubmit, submitLabel){
-  closeGenericModal();
-  const ov = document.createElement('div');
-  ov.id = 'genericModalOverlay';
-  ov.className = 'modal-overlay-generic';
-  ov.innerHTML = `
-    <div class="modal-box">
-      <h3 style="margin:0 0 16px; font-size:1.3rem;">${title}</h3>
-      ${fields.map(f=>`
-        <div class="field">
-          <label>${f.label}</label>
-          <input type="text" id="${f.id}" placeholder="${f.placeholder||''}" value="${f.value||''}">
-        </div>
-      `).join('')}
-      <div class="modal-error" id="genericModalError"></div>
-      <div class="row" style="justify-content:flex-end; margin-top:6px;">
-        <button class="btn btn-outline btn-small" onclick="closeGenericModal()">Annulla</button>
-        <button class="btn btn-primary btn-small" id="genericModalSubmitBtn">${submitLabel||'Salva'}</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(ov);
-  document.getElementById('genericModalSubmitBtn').onclick = ()=>{
-    const values = {};
-    fields.forEach(f=> values[f.id] = document.getElementById(f.id).value.trim());
-    onSubmit(values);
-  };
-}
-
-/* ========================================================================
-   TRADUZIONE AUTOMATICA (IT -> EN/ES/DE/FR)
-   ---------------------------------------------------------------------
-   Usa un servizio di traduzione automatica gratuito (MyMemory). E' un
-   aiuto per non lasciare campi vuoti, ma resta una traduzione automatica:
-   ricontrolla sempre i nomi propri dei piatti (es. "Negroni", "Mojito")
-   che non andrebbero tradotti - puoi sempre correggerli a mano aprendo
-   la lingua giusta.
-   ======================================================================== */
-async function translateFromIt(text, targetLang){
-  if(!text || !text.trim()) return '';
-  try{
-    const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=it|${targetLang}`);
-    const data = await res.json();
-    return (data && data.responseData && data.responseData.translatedText) ? data.responseData.translatedText : text;
-  }catch(e){
-    console.error('Errore traduzione', e);
-    return text;
-  }
-}
-
-async function autoTranslateObj(obj, fieldNames){
-  const targets = ['en','es','de','fr'];
-  for(const field of fieldNames){
-    const itText = obj[field] ? obj[field].it : '';
-    if(!itText) continue;
-    for(const lang of targets){
-      obj[field][lang] = await translateFromIt(itText, lang);
-    }
-  }
-}
-
-async function init(){
-  sb.auth.onAuthStateChange((event, sessionData)=>{
-    if(event === 'PASSWORD_RECOVERY'){
-      renderResetPassword();
-    }
-  });
-  const { data } = await sb.auth.getSession();
-  session = data.session;
-  if(session){ await loadAll(); renderShell(); }
-  else{ renderLogin(); }
-}
-
-function renderLogin(){
-  app.innerHTML = `
-    <div class="login-screen">
-      <div class="login-box">
-        <h1>Gustavo</h1>
-        <div class="sub">Gestione Menu</div>
-        <div class="field">
-          <label>Email</label>
-          <input type="email" id="loginEmail" placeholder="admin@gustavo-menu.app">
-        </div>
-        <div class="field">
-          <label>Password</label>
-          <input type="password" id="loginPassword" placeholder="••••••••">
-        </div>
-        <button class="btn btn-primary" onclick="doLogin()">Accedi</button>
-        <button class="btn btn-outline" style="width:100%; margin-top:10px;" onclick="doSignup()">Crea il tuo account</button>
-        <div style="margin-top:14px;">
-          <a href="#" onclick="doForgotPassword(); return false;" style="font-size:0.78rem; color:var(--ink-soft); text-decoration:underline;">Password dimenticata?</a>
-        </div>
-        <div class="login-error" id="loginError"></div>
-      </div>
-    </div>
-  `;
-}
-
-async function doLogin(){
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-  const errEl = document.getElementById('loginError');
-  errEl.textContent = '';
-  if(!email || !password){ errEl.textContent = 'Inserisci email e password.'; return; }
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if(error){ errEl.textContent = 'Accesso non riuscito: ' + error.message; return; }
-  session = data.session;
+async function showApp(session){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('userEmail').textContent = session.user.email;
+  renderLangs();
   await loadAll();
-  renderShell();
+  switchTab('piatti');
 }
-
-async function doSignup(){
+document.getElementById('loginBtn').onclick = async ()=>{
   const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-  const errEl = document.getElementById('loginError');
+  const pass = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginErr');
   errEl.textContent = '';
-  if(!email || password.length < 6){ errEl.textContent = 'Inserisci email e una password di almeno 6 caratteri.'; return; }
-  const { data, error } = await sb.auth.signUp({ email, password });
-  if(error){ errEl.textContent = 'Errore: ' + error.message; return; }
-  if(data.session){
-    session = data.session;
-    await loadAll();
-    renderShell();
-  } else {
-    errEl.style.color = 'var(--success)';
-    errEl.textContent = 'Account creato! Controlla la tua email per confermare, poi torna qui e premi Accedi.';
-  }
-}
-
-async function doForgotPassword(){
-  showPromptModal('Password dimenticata', [
-    {id:'fp_email', label:'La tua email', placeholder:'tuo@email.com'}
-  ], async (values)=>{
-    const email = values.fp_email;
-    const errModal = document.getElementById('genericModalError');
-    if(!email){ errModal.textContent = 'Inserisci un\'email valida.'; return; }
-    errModal.style.color = '';
-    errModal.textContent = 'Invio in corso…';
-    const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://gustavo-amor.github.io/Gustavo.menu/admin.html'
-    });
-    if(error){ errModal.textContent = 'Errore: ' + error.message; return; }
-    closeGenericModal();
-    const errEl = document.getElementById('loginError');
-    errEl.style.color = 'var(--success)';
-    errEl.textContent = 'Controlla la tua email: ti abbiamo mandato un link per reimpostare la password.';
-  }, 'Invia link');
-}
-
-function renderResetPassword(){
-  app.innerHTML = `
-    <div class="login-screen">
-      <div class="login-box">
-        <h1>Gustavo</h1>
-        <div class="sub">Imposta una nuova password</div>
-        <div class="field">
-          <label>Nuova password</label>
-          <input type="password" id="newPassword" placeholder="••••••••">
-        </div>
-        <button class="btn btn-primary" onclick="doSetNewPassword()">Salva nuova password</button>
-        <div class="login-error" id="loginError"></div>
-      </div>
-    </div>
-  `;
-}
-
-async function doSetNewPassword(){
-  const password = document.getElementById('newPassword').value;
-  const errEl = document.getElementById('loginError');
-  errEl.style.color = '';
-  if(password.length < 6){ errEl.textContent = 'La password deve avere almeno 6 caratteri.'; return; }
-  const { error } = await sb.auth.updateUser({ password });
-  if(error){ errEl.textContent = 'Errore: ' + error.message; return; }
-  errEl.style.color = 'var(--success)';
-  errEl.textContent = 'Password aggiornata! Reindirizzamento…';
-  const { data } = await sb.auth.getSession();
-  session = data.session;
-  setTimeout(async ()=>{ await loadAll(); renderShell(); }, 1200);
-}
-
-async function doLogout(){
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if(error){ errEl.textContent = 'Accesso non riuscito. Controlla email e password.'; return; }
+  showApp(data.session);
+};
+document.getElementById('logoutBtn').onclick = async ()=>{
   await sb.auth.signOut();
-  session = null;
-  renderLogin();
-}
+  location.reload();
+};
 
+/* ---------------- DATA LOAD ---------------- */
 async function loadAll(){
-  const [catsRes, subsRes, itemsRes, venueRes, bannersRes] = await Promise.all([
+  const [c, s, m, v, b] = await Promise.all([
     sb.from('categories').select('*').order('sort_order'),
     sb.from('subcategories').select('*').order('sort_order'),
     sb.from('menu_items').select('*').order('sort_order'),
     sb.from('venue_info').select('*').eq('id',1).maybeSingle(),
     sb.from('banners').select('*').order('sort_order')
   ]);
-  categories = catsRes.data || [];
-  subcategories = subsRes.data || [];
-  menuItems = itemsRes.data || [];
-  venueInfo = venueRes.data || { address:{}, hours:{}, phone:{} };
-  banners = bannersRes.data || [];
+  state.categories = c.data || [];
+  state.subcategories = s.data || [];
+  state.items = m.data || [];
+  state.venue = v.data;
+  state.banners = b.data || [];
 }
 
-function renderShell(){
-  app.innerHTML = `
-    <div class="topbar">
-      <h1>Gustavo <span style="font-size:0.9rem; color:var(--ink-soft);">· Gestione</span></h1>
-      <div class="row">
-        <span class="who">${session.user.email}</span>
-        <button class="btn btn-outline btn-small" onclick="doLogout()">Esci</button>
-      </div>
+/* ---------------- TOP NAV ---------------- */
+function renderLangs(){
+  const el = document.getElementById('langs');
+  el.innerHTML = LANGS.map(l=>`<button class="langbtn ${l.key===state.lang?'active':''}" data-lang="${l.key}">${l.label}</button>`).join('');
+  el.querySelectorAll('.langbtn').forEach(b=> b.onclick = ()=>{ state.lang = b.dataset.lang; renderLangs(); renderCurrentTab(); });
+}
+document.querySelectorAll('.tabbtn').forEach(b=> b.onclick = ()=> switchTab(b.dataset.tab));
+function switchTab(tab){
+  state.tab = tab;
+  document.querySelectorAll('.tabbtn').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
+  document.getElementById('tabPiatti').classList.toggle('hidden', tab!=='piatti');
+  document.getElementById('tabCategorie').classList.toggle('hidden', tab!=='categorie');
+  document.getElementById('tabInfo').classList.toggle('hidden', tab!=='info');
+  document.getElementById('searchWrap').classList.toggle('hidden', tab!=='piatti');
+  renderCurrentTab();
+}
+function renderCurrentTab(){
+  if(state.tab==='piatti') renderPiatti();
+  else if(state.tab==='categorie') renderCategorie();
+  else renderInfo();
+}
+document.getElementById('searchInput').oninput = (e)=>{ state.search = e.target.value.trim().toLowerCase(); applySearchFilter(); };
+
+/* ---------------- PIATTI TAB ---------------- */
+function renderPiatti(){
+  const root = document.getElementById('tabPiatti');
+  const cats = state.categories;
+  const nav = cats.map(c=>{
+    const subs = state.subcategories.filter(s=>s.category_id===c.id);
+    return `<a href="#cat-${c.id}">${esc(t(c.title))}</a>` +
+      subs.map(s=>`<a class="subnavlink" href="#cat-${c.id}">${esc(t(s.title))}</a>`).join('');
+  }).join('');
+
+  const accs = cats.map(c=>{
+    const subs = state.subcategories.filter(s=>s.category_id===c.id);
+    const groups = subs.length ? subs : [{id:null, title:{it:''}}];
+    const count = state.items.filter(i=>i.category_id===c.id).length;
+    const body = groups.map(g=>{
+      const rows = state.items
+        .filter(i=> i.category_id===c.id && i.subcategory_id===g.id)
+        .map(i=> dishRowHtml(i)).join('');
+      return `<div class="subGroup" data-sub="${g.id||''}">
+        ${g.id ? `<h4>${esc(t(g.title))}</h4>` : ''}
+        ${rows || '<div style="font-size:13px;color:var(--muted);padding:4px 0;">Nessuna voce.</div>'}
+        <button class="addRowBtn" data-cat="${c.id}" data-sub="${g.id||''}">+ Aggiungi voce</button>
+      </div>`;
+    }).join('');
+    return `<details class="catAcc" id="cat-${c.id}" open>
+      <summary><span>${esc(t(c.title))}</span><span class="count">${count} voci</span></summary>
+      <div class="catBody">${body}</div>
+    </details>`;
+  }).join('');
+
+  root.innerHTML = `<div id="piattiLayout"><nav id="catNav">${nav}</nav><div id="catAccWrap">${accs}</div></div>`;
+
+  root.querySelectorAll('.miniBtn.edit').forEach(b=> b.onclick = ()=> openDrawer('edit', b.dataset.id));
+  root.querySelectorAll('.miniBtn.danger').forEach(b=> b.onclick = ()=> deleteItem(b.dataset.id));
+  root.querySelectorAll('.addRowBtn').forEach(b=> b.onclick = ()=> openDrawer('new', null, {category_id:b.dataset.cat, subcategory_id:b.dataset.sub||null}));
+  applySearchFilter();
+}
+function dishRowHtml(i){
+  const photo = i.photo_url ? `<img class="dishThumb" src="${i.photo_url}">` : `<div class="dishThumb empty">no foto</div>`;
+  const meta = [i.price, (i.allergens||[]).join(', ')].filter(Boolean).join(' · ');
+  return `<div class="dishRow" data-name="${esc(t(i.name)).toLowerCase()}">
+    ${photo}
+    <div class="dishInfo">
+      <div class="name">${esc(t(i.name))}${i.recommended?' ★':''}</div>
+      <div class="meta">${esc(meta)}</div>
     </div>
-    <div class="tabs" id="tabs"></div>
-    <div class="content" id="tabContent"></div>
-  `;
-  renderTabs();
-  renderTabContent();
+    <div class="dishActions">
+      <button class="miniBtn edit" data-id="${i.id}">Modifica</button>
+      <button class="miniBtn danger" data-id="${i.id}">Elimina</button>
+    </div>
+  </div>`;
 }
-
-function renderTabs(){
-  const tabs = [
-    {key:'items', label:'Piatti & Drink'},
-    {key:'categories', label:'Categorie'},
-    {key:'venue', label:'Info Locale'}
-  ];
-  document.getElementById('tabs').innerHTML = tabs.map(tb=>
-    `<button class="tab-btn ${currentTab===tb.key?'active':''}" onclick="switchTab('${tb.key}')">${tb.label}</button>`
-  ).join('');
-}
-
-function switchTab(key){
-  currentTab = key;
-  renderTabs();
-  renderTabContent();
-}
-
-function renderTabContent(){
-  const el = document.getElementById('tabContent');
-  if(currentTab==='items') el.innerHTML = renderItemsTab();
-  else if(currentTab==='categories') el.innerHTML = renderCategoriesTab();
-  else if(currentTab==='venue') el.innerHTML = renderVenueTab();
-}
-
-function langTabsHTML(){
-  return `<div class="lang-tabs">` + LANGS.map(l=>
-    `<button class="lang-tab ${editLang===l?'active':''}" onclick="setEditLang('${l}')">${LANG_LABEL[l]}</button>`
-  ).join('') + `</div>`;
-}
-function setEditLang(l){
-  editLang = l;
-  renderTabContent();
-}
-
-function renderItemsTab(){
-  let html = langTabsHTML();
-  html += `<p class="muted">Stai modificando i testi in <strong>${LANG_LABEL[editLang]}</strong>. Cambia lingua sopra per tradurre lo stesso piatto.</p>`;
-
-  categories.forEach(cat=>{
-    html += `<div class="section-title">${(cat.title[editLang]||cat.title.it)}</div>`;
-    const subsOfCat = subcategories.filter(s=>s.category_id===cat.id);
-    if(subsOfCat.length){
-      subsOfCat.forEach(sub=>{
-        html += `<h3 style="font-size:1.05rem; margin:14px 0 8px; color:var(--ink-soft);">${(sub.title[editLang]||sub.title.it)}</h3>`;
-        html += renderItemsList(menuItems.filter(i=>i.subcategory_id===sub.id));
-        html += `<button class="btn btn-outline btn-small" onclick="openItemForm(null,'${cat.id}','${sub.id}')">+ Aggiungi voce qui</button>`;
-      });
-    } else {
-      html += renderItemsList(menuItems.filter(i=>i.category_id===cat.id && !i.subcategory_id));
-      html += `<button class="btn btn-outline btn-small" onclick="openItemForm(null,'${cat.id}',null)">+ Aggiungi voce qui</button>`;
-    }
+function applySearchFilter(){
+  const q = state.search;
+  document.querySelectorAll('.dishRow').forEach(r=>{
+    r.classList.toggle('dimmed', q && !r.dataset.name.includes(q));
   });
-
-  html += `<div id="itemFormWrap"></div>`;
-  return html;
+  document.querySelectorAll('details.catAcc').forEach(d=>{
+    if(!q){ return; }
+    const anyVisible = Array.from(d.querySelectorAll('.dishRow')).some(r=>!r.classList.contains('dimmed'));
+    d.open = anyVisible;
+  });
+}
+async function deleteItem(id){
+  if(!confirm('Eliminare questa voce?')) return;
+  const { error } = await sb.from('menu_items').delete().eq('id', id);
+  if(error){ toast('Errore: ' + error.message); return; }
+  state.items = state.items.filter(i=>i.id!==id);
+  renderPiatti();
+  toast('Voce eliminata');
 }
 
-function renderItemsList(items){
-  if(!items.length) return `<p class="muted" style="margin:6px 0 12px;">Nessuna voce.</p>`;
-  return items.map(it=>`
-    <div class="card">
-      <div class="card-head">
-        <div class="row" style="gap:14px;">
-          ${it.photo_url ? `<img class="item-photo" src="${it.photo_url}" alt="">` : `<div class="item-photo-placeholder">no foto</div>`}
-          <div>
-            <h3>${it.name[editLang]||it.name.it} ${it.recommended ? '<span style="font-size:0.7rem;color:var(--success);">★ consigliato</span>' : ''}</h3>
-            ${it.group_label && it.group_label[editLang] ? `<p class="muted" style="font-weight:600; text-transform:uppercase; font-size:0.72rem; letter-spacing:1px;">${it.group_label[editLang]}</p>` : ''}
-            <p class="muted">${it.ingredients[editLang]||it.ingredients.it}</p>
-            <p class="muted">${it.price} ${it.allergens && it.allergens.length ? '· ' + it.allergens.join(', ') : ''}</p>
-          </div>
-        </div>
-        <div class="row">
-          <button class="btn btn-outline btn-small" onclick="openItemForm('${it.id}')">Modifica</button>
-          <button class="btn btn-danger" onclick="deleteItem('${it.id}')">Elimina</button>
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-function openItemForm(itemId, catId, subId){
-  const it = itemId ? JSON.parse(JSON.stringify(menuItems.find(i=>i.id===itemId))) : {
-    id:null, category_id:catId, subcategory_id:subId,
-    name:{it:'',en:'',es:'',de:'',fr:''}, ingredients:{it:'',en:'',es:'',de:'',fr:''},
-    price:'', allergens:[], recommended:false, photo_url:null, group_label:{it:'',en:'',es:'',de:'',fr:''}
+/* ---------------- DRAWER (add/edit dish) ---------------- */
+function openDrawer(mode, id, presetIds){
+  state.drawerMode = mode; state.pendingPhotoFile = null;
+  const item = mode==='edit' ? state.items.find(i=>i.id===id) : {
+    id:null, category_id:presetIds.category_id, subcategory_id:presetIds.subcategory_id,
+    name:{}, ingredients:{}, group_label:{}, price:'', allergens:[], recommended:false, photo_url:null, sort_order:0
   };
-  if(!it.group_label) it.group_label = {it:'',en:'',es:'',de:'',fr:''};
-  window._editingItem = it;
-  const wrap = document.getElementById('itemFormWrap');
-  wrap.innerHTML = `
-    <div class="card" style="border-color:var(--ink-soft);">
-      <h3 style="margin-bottom:14px;">${itemId ? 'Modifica voce' : 'Nuova voce'}</h3>
-      ${langTabsHTML()}
-      <div class="field"><label>Nome (${LANG_LABEL[editLang]})</label><input id="f_name" value="${(it.name[editLang]||'').replace(/"/g,'&quot;')}"></div>
-      <div class="field"><label>Ingredienti (${LANG_LABEL[editLang]})</label><textarea id="f_ingr" rows="2">${it.ingredients[editLang]||''}</textarea></div>
-      <div class="field"><label>Sotto-gruppo (opzionale — es. "Rossi · Canari", "Gin")</label><input id="f_group" value="${(it.group_label[editLang]||'').replace(/"/g,'&quot;')}" placeholder="lascia vuoto se non serve"></div>
-      <div class="grid2">
-        <div class="field"><label>Prezzo</label><input id="f_price" value="${it.price||''}" placeholder="€9"></div>
-        <div class="field"><label><input type="checkbox" id="f_recommended" ${it.recommended?'checked':''} style="width:auto;"> Consigliato</label></div>
-      </div>
-      <div class="field">
-        <label>Allergeni</label>
-        <div>${ALLERGENS.map(a=>`<label class="allergen-check"><input type="checkbox" value="${a}" ${it.allergens&&it.allergens.includes(a)?'checked':''} class="allergen-cb"> ${ALLERGEN_LABELS_IT[a]}</label>`).join('')}</div>
-      </div>
-      <div class="field">
-        <label>Foto piatto</label>
-        <input type="file" accept="image/*" id="f_photo">
-        ${it.photo_url ? `<img class="item-photo" src="${it.photo_url}" style="margin-top:8px;">` : ''}
-      </div>
-      <div class="row" style="margin-top:16px;">
-        <button class="btn btn-primary btn-small" onclick="saveItem('${itemId||''}','${it.category_id}','${it.subcategory_id||''}')">Salva</button>
-        <button class="btn btn-outline btn-small" onclick="closeItemForm()">Annulla</button>
-      </div>
+  state.drawerData = JSON.parse(JSON.stringify(item));
+  document.getElementById('drawerTitle').textContent = mode==='edit' ? 'Modifica voce' : 'Nuova voce';
+  renderDrawerBody();
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('drawer').classList.add('show');
+}
+function closeDrawer(){
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('drawer').classList.remove('show');
+}
+document.getElementById('drawerClose').onclick = closeDrawer;
+document.getElementById('drawerCancel').onclick = closeDrawer;
+document.getElementById('overlay').onclick = closeDrawer;
+
+function renderDrawerBody(){
+  const d = state.drawerData;
+  const body = document.getElementById('drawerBody');
+  const langTabs = LANGS.map(l=>`<button class="langbtn ${l.key===state.lang?'active':''}" data-dlang="${l.key}">${l.label}</button>`).join('');
+  const allergenChips = ALLERGENS.map(a=>{
+    const on = (d.allergens||[]).includes(a.key);
+    return `<button type="button" class="allergenChip ${on?'on':''}" data-allergen="${esc(a.key)}">${esc(a.label)}</button>`;
+  }).join('');
+  body.innerHTML = `
+    <div class="drawerLangs">${langTabs}</div>
+    <img id="photoPreview" class="photoPreview ${d.photo_url?'show':''}" src="${d.photo_url||''}">
+    <div class="field"><label>Nome (${state.lang.toUpperCase()})</label><input type="text" id="f_name" value="${esc(t(d.name))}"></div>
+    <div class="field"><label>Ingredienti (${state.lang.toUpperCase()})</label><textarea id="f_ing">${esc(t(d.ingredients))}</textarea></div>
+    <div class="field"><label>Sotto-gruppo (opzionale, es. "Rossi · Canari")</label><input type="text" id="f_group" value="${esc(t(d.group_label))}"></div>
+    <div class="rowFields">
+      <div class="field"><label>Prezzo</label><input type="text" id="f_price" value="${esc(d.price||'')}"></div>
+      <div class="field checkRow" style="align-self:center;"><input type="checkbox" id="f_rec" ${d.recommended?'checked':''}><label style="margin:0;text-transform:none;font-weight:500;">Consigliato</label></div>
     </div>
+    <div class="field"><label>Allergeni</label><div class="allergenGrid">${allergenChips}</div></div>
+    <div class="field"><label>Foto piatto</label><input type="file" id="f_photo" accept="image/*"></div>
   `;
-  wrap.scrollIntoView({behavior:'smooth'});
-}
-function closeItemForm(){ document.getElementById('itemFormWrap').innerHTML = ''; }
-
-async function saveItem(itemId, catId, subId){
-  const it = window._editingItem;
-  it.name[editLang] = document.getElementById('f_name').value.trim();
-  it.ingredients[editLang] = document.getElementById('f_ingr').value.trim();
-  it.group_label[editLang] = document.getElementById('f_group').value.trim();
-  it.price = document.getElementById('f_price').value.trim();
-  it.recommended = document.getElementById('f_recommended').checked;
-  it.allergens = [...document.querySelectorAll('.allergen-cb:checked')].map(c=>c.value);
-
-  if(editLang === 'it'){
-    showToast('Traduzione automatica in corso…');
-    await autoTranslateObj(it, ['name','ingredients']);
-    if(it.group_label.it){
-      await autoTranslateObj(it, ['group_label']);
-    } else {
-      ['en','es','de','fr'].forEach(l=> it.group_label[l] = '');
-    }
-  }
-
-  const photoInput = document.getElementById('f_photo');
-  let photo_url = it.photo_url || null;
-  if(photoInput.files && photoInput.files[0]){
-    photo_url = await uploadItemPhoto(photoInput.files[0]);
-    if(!photo_url){ showToast('Errore caricamento foto', true); return; }
-  }
-
-  const group_label_payload = it.group_label.it ? it.group_label : null;
-
-  const payload = {
-    category_id: catId,
-    subcategory_id: subId || null,
-    name: it.name, ingredients: it.ingredients, price: it.price,
-    allergens: it.allergens, recommended: it.recommended, photo_url,
-    group_label: group_label_payload
+  body.querySelectorAll('[data-dlang]').forEach(b=> b.onclick = ()=>{
+    saveDrawerFieldsToModel();
+    state.lang = b.dataset.dlang;
+    renderLangs();
+    renderDrawerBody();
+  });
+  body.querySelectorAll('.allergenChip').forEach(b=> b.onclick = ()=>{
+    const key = b.dataset.allergen;
+    d.allergens = d.allergens || [];
+    const idx = d.allergens.indexOf(key);
+    if(idx>=0) d.allergens.splice(idx,1); else d.allergens.push(key);
+    b.classList.toggle('on');
+  });
+  document.getElementById('f_photo').onchange = (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    state.pendingPhotoFile = file;
+    const url = URL.createObjectURL(file);
+    const pv = document.getElementById('photoPreview');
+    pv.src = url; pv.classList.add('show');
   };
-
+}
+function saveDrawerFieldsToModel(){
+  const d = state.drawerData;
+  d.name = d.name || {}; d.ingredients = d.ingredients || {}; d.group_label = d.group_label || {};
+  d.name[state.lang] = document.getElementById('f_name').value;
+  d.ingredients[state.lang] = document.getElementById('f_ing').value;
+  d.group_label[state.lang] = document.getElementById('f_group').value;
+  d.price = document.getElementById('f_price').value;
+  d.recommended = document.getElementById('f_rec').checked;
+}
+document.getElementById('drawerSave').onclick = async ()=>{
+  saveDrawerFieldsToModel();
+  const d = state.drawerData;
+  let photo_url = d.photo_url;
+  if(state.pendingPhotoFile){
+    const file = state.pendingPhotoFile;
+    const path = `dish_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9_.-]/g,'_')}`;
+    const { error: upErr } = await sb.storage.from('menu-photos').upload(path, file, { upsert:true });
+    if(upErr){ toast('Errore upload foto: ' + upErr.message); return; }
+    const { data: pub } = sb.storage.from('menu-photos').getPublicUrl(path);
+    photo_url = pub.publicUrl;
+  }
+  const payload = {
+    category_id: d.category_id, subcategory_id: d.subcategory_id || null,
+    name: d.name, ingredients: d.ingredients, group_label: d.group_label,
+    price: d.price, allergens: d.allergens || [], recommended: !!d.recommended,
+    photo_url, sort_order: d.sort_order || 0
+  };
   let error;
-  if(itemId){
-    ({ error } = await sb.from('menu_items').update(payload).eq('id', itemId));
+  if(state.drawerMode==='edit'){
+    ({ error } = await sb.from('menu_items').update(payload).eq('id', d.id));
   } else {
-    payload.sort_order = (menuItems.filter(m=>m.category_id===catId).length+1)*10;
     ({ error } = await sb.from('menu_items').insert(payload));
   }
-  if(error){ showToast('Errore: ' + error.message, true); return; }
-  showToast('Salvato con successo');
-  closeItemForm();
+  if(error){ toast('Errore: ' + error.message); return; }
   await loadAll();
-  renderTabContent();
-}
+  renderPiatti();
+  closeDrawer();
+  toast('Salvato');
+};
 
-async function uploadItemPhoto(file){
-  return new Promise((resolve)=>{
-    const reader = new FileReader();
-    reader.onload = e=>{
-      const img = new Image();
-      img.onload = ()=>{
-        const canvas = document.createElement('canvas');
-        const maxW = 900;
-        const scale = Math.min(1, maxW/img.width);
-        canvas.width = img.width*scale; canvas.height = img.height*scale;
-        canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-        canvas.toBlob(async (blob)=>{
-          const fname = `item_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-          const { error } = await sb.storage.from('menu-photos').upload(fname, blob, {contentType:'image/jpeg'});
-          if(error){ resolve(null); return; }
-          const { data } = sb.storage.from('menu-photos').getPublicUrl(fname);
-          resolve(data.publicUrl);
-        }, 'image/jpeg', 0.8);
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-async function deleteItem(id){
-  showConfirmModal('Eliminare definitivamente questa voce?', async ()=>{
-    const { error } = await sb.from('menu_items').delete().eq('id', id);
-    if(error){ showToast('Errore: ' + error.message, true); return; }
-    showToast('Voce eliminata');
-    await loadAll();
-    renderTabContent();
-  });
-}
-
-function renderCategoriesTab(){
-  let html = langTabsHTML();
-  html += `<p class="muted">Stai modificando i nomi in <strong>${LANG_LABEL[editLang]}</strong>.</p>`;
-
-  const catsSorted = [...categories].sort((a,b)=>a.sort_order-b.sort_order);
-  catsSorted.forEach((cat,idx)=>{
-    const subsOfCat = subcategories.filter(s=>s.category_id===cat.id).sort((a,b)=>a.sort_order-b.sort_order);
-    html += `<div class="card">
-      <div class="card-head">
-        <div class="row" style="gap:4px;">
-          <button class="btn btn-outline btn-small" style="width:auto; padding:6px 10px;" onclick="moveCategory('${cat.id}',-1)" ${idx===0?'disabled':''} title="Sposta su">↑</button>
-          <button class="btn btn-outline btn-small" style="width:auto; padding:6px 10px;" onclick="moveCategory('${cat.id}',1)" ${idx===catsSorted.length-1?'disabled':''} title="Sposta giù">↓</button>
-        </div>
-        <div class="field" style="flex:1;"><input id="cat_name_${cat.id}" value="${(cat.title[editLang]||'').replace(/"/g,'&quot;')}"></div>
-        <button class="btn btn-primary btn-small" style="width:auto;" onclick="renameCategory('${cat.id}', document.getElementById('cat_name_${cat.id}').value)">Salva</button>
-        <button class="btn btn-danger" onclick="deleteCategory('${cat.id}')">Elimina categoria</button>
+/* ---------------- CATEGORIE TAB ---------------- */
+function renderCategorie(){
+  const root = document.getElementById('tabCategorie');
+  const cats = state.categories;
+  root.innerHTML = cats.map((c,idx)=>{
+    const subs = state.subcategories.filter(s=>s.category_id===c.id);
+    return `<div class="catCard" data-cat="${c.id}">
+      <div class="catCardHead">
+        <button class="arrowBtn" data-act="catUp" data-id="${c.id}" ${idx===0?'disabled':''}>↑</button>
+        <button class="arrowBtn" data-act="catDown" data-id="${c.id}" ${idx===cats.length-1?'disabled':''}>↓</button>
+        <input type="text" data-field="catTitle" data-id="${c.id}" value="${esc(t(c.title))}">
+        <button class="miniBtn" data-act="catSave" data-id="${c.id}">Salva</button>
+        <button class="miniBtn danger" data-act="catDel" data-id="${c.id}">Elimina categoria</button>
       </div>
-      <p class="muted">Chiave interna: ${cat.key}</p>
-      <hr class="sep">
-      <h3 style="font-size:1rem;">Sottocategorie</h3>
-      ${subsOfCat.map((s,sidx)=>`
-        <div class="row" style="margin:6px 0;">
-          <button class="btn btn-outline btn-small" style="width:auto; padding:6px 10px;" onclick="moveSubcategory('${s.id}',-1)" ${sidx===0?'disabled':''} title="Sposta su">↑</button>
-          <button class="btn btn-outline btn-small" style="width:auto; padding:6px 10px;" onclick="moveSubcategory('${s.id}',1)" ${sidx===subsOfCat.length-1?'disabled':''} title="Sposta giù">↓</button>
-          <input id="sub_name_${s.id}" value="${(s.title[editLang]||'').replace(/"/g,'&quot;')}" style="flex:1; padding:8px; border:1px solid var(--line); border-radius:6px;">
-          <button class="btn btn-primary btn-small" style="width:auto;" onclick="renameSubcategory('${s.id}', document.getElementById('sub_name_${s.id}').value)">Salva</button>
-          <button class="btn btn-danger" onclick="deleteSubcategory('${s.id}')">Elimina</button>
-        </div>
-      `).join('')}
-      <button class="btn btn-outline btn-small" style="margin-top:8px;" onclick="addSubcategory('${cat.id}')">+ Nuova sottocategoria</button>
+      <div class="subKey">Chiave interna: ${esc(c.key)}</div>
+      ${subs.map((s,si)=>`
+        <div class="subRow" data-sub="${s.id}">
+          <button class="arrowBtn" data-act="subUp" data-id="${s.id}" ${si===0?'disabled':''}>↑</button>
+          <button class="arrowBtn" data-act="subDown" data-id="${s.id}" ${si===subs.length-1?'disabled':''}>↓</button>
+          <input type="text" data-field="subTitle" data-id="${s.id}" value="${esc(t(s.title))}">
+          <button class="miniBtn" data-act="subSave" data-id="${s.id}">Salva</button>
+          <button class="miniBtn danger" data-act="subDel" data-id="${s.id}">Elimina</button>
+        </div>`).join('')}
+      <button class="addRowBtn" data-act="subNew" data-id="${c.id}">+ Nuova sottocategoria</button>
     </div>`;
-  });
+  }).join('') + `<button class="addRowBtn" data-act="catNew">+ Nuova categoria</button>`;
 
-  html += `<button class="btn btn-primary" style="width:auto;" onclick="addCategory()">+ Nuova categoria</button>`;
-  return html;
+  root.querySelectorAll('[data-act]').forEach(b=> b.onclick = ()=> handleCatAction(b.dataset.act, b.dataset.id));
 }
-
-async function moveCategory(id, direction){
-  const sorted = [...categories].sort((a,b)=>a.sort_order-b.sort_order);
-  const idx = sorted.findIndex(c=>c.id===id);
-  const swapIdx = idx + direction;
-  if(swapIdx < 0 || swapIdx >= sorted.length) return;
-  const a = sorted[idx], b = sorted[swapIdx];
-  const tmp = a.sort_order;
-  const { error: e1 } = await sb.from('categories').update({sort_order: b.sort_order}).eq('id', a.id);
-  const { error: e2 } = await sb.from('categories').update({sort_order: tmp}).eq('id', b.id);
-  if(e1 || e2){ showToast('Errore: ' + ((e1||e2).message), true); return; }
-  showToast('Ordine aggiornato');
-  await loadAll();
-  renderTabContent();
-}
-
-async function moveSubcategory(id, direction){
-  const sub = subcategories.find(s=>s.id===id);
-  const siblings = subcategories.filter(s=>s.category_id===sub.category_id).sort((a,b)=>a.sort_order-b.sort_order);
-  const idx = siblings.findIndex(s=>s.id===id);
-  const swapIdx = idx + direction;
-  if(swapIdx < 0 || swapIdx >= siblings.length) return;
-  const a = siblings[idx], b = siblings[swapIdx];
-  const tmp = a.sort_order;
-  const { error: e1 } = await sb.from('subcategories').update({sort_order: b.sort_order}).eq('id', a.id);
-  const { error: e2 } = await sb.from('subcategories').update({sort_order: tmp}).eq('id', b.id);
-  if(e1 || e2){ showToast('Errore: ' + ((e1||e2).message), true); return; }
-  showToast('Ordine aggiornato');
-  await loadAll();
-  renderTabContent();
-}
-
-async function renameCategory(id, value){
-  const cat = categories.find(c=>c.id===id);
-  cat.title[editLang] = value;
-  if(editLang === 'it'){
-    showToast('Traduzione automatica in corso…');
-    await autoTranslateObj(cat, ['title']);
+async function handleCatAction(act, id){
+  const root = document.getElementById('tabCategorie');
+  if(act==='catSave'){
+    const val = root.querySelector(`input[data-field="catTitle"][data-id="${id}"]`).value;
+    const c = state.categories.find(x=>x.id===id);
+    c.title = c.title||{}; c.title[state.lang] = val;
+    const { error } = await sb.from('categories').update({title:c.title}).eq('id', id);
+    toast(error ? 'Errore' : 'Categoria salvata');
+  } else if(act==='subSave'){
+    const val = root.querySelector(`input[data-field="subTitle"][data-id="${id}"]`).value;
+    const s = state.subcategories.find(x=>x.id===id);
+    s.title = s.title||{}; s.title[state.lang] = val;
+    const { error } = await sb.from('subcategories').update({title:s.title}).eq('id', id);
+    toast(error ? 'Errore' : 'Sottocategoria salvata');
+  } else if(act==='catDel'){
+    if(!confirm('Eliminare la categoria e tutte le sue voci/sottocategorie?')) return;
+    await sb.from('categories').delete().eq('id', id);
+    await loadAll(); renderCategorie(); toast('Categoria eliminata');
+  } else if(act==='subDel'){
+    if(!confirm('Eliminare la sottocategoria?')) return;
+    await sb.from('subcategories').delete().eq('id', id);
+    await loadAll(); renderCategorie(); toast('Sottocategoria eliminata');
+  } else if(act==='subNew'){
+    const title = prompt('Nome nuova sottocategoria (IT):');
+    if(!title) return;
+    const subs = state.subcategories.filter(s=>s.category_id===id);
+    await sb.from('subcategories').insert({category_id:id, key:title, title:{it:title}, sort_order:subs.length});
+    await loadAll(); renderCategorie(); toast('Sottocategoria creata');
+  } else if(act==='catNew'){
+    const title = prompt('Nome nuova categoria (IT):');
+    if(!title) return;
+    await sb.from('categories').insert({key:title, title:{it:title}, sort_order:state.categories.length});
+    await loadAll(); renderCategorie(); toast('Categoria creata');
+  } else if(act==='catUp' || act==='catDown'){
+    await swapOrder('categories', state.categories, id, act==='catUp'?-1:1);
+    await loadAll(); renderCategorie();
+  } else if(act==='subUp' || act==='subDown'){
+    const s = state.subcategories.find(x=>x.id===id);
+    const siblings = state.subcategories.filter(x=>x.category_id===s.category_id);
+    await swapOrder('subcategories', siblings, id, act==='subUp'?-1:1);
+    await loadAll(); renderCategorie();
   }
-  const { error } = await sb.from('categories').update({title:cat.title}).eq('id', id);
-  if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast('Categoria aggiornata');
-  await loadAll();
+}
+async function swapOrder(table, list, id, dir){
+  const idx = list.findIndex(x=>x.id===id);
+  const swapIdx = idx + dir;
+  if(swapIdx<0 || swapIdx>=list.length) return;
+  const a = list[idx], b = list[swapIdx];
+  const ao = a.sort_order, bo = b.sort_order;
+  await sb.from(table).update({sort_order: bo}).eq('id', a.id);
+  await sb.from(table).update({sort_order: ao}).eq('id', b.id);
 }
 
-async function deleteCategory(id){
-  showConfirmModal('Eliminare questa categoria? Verranno eliminati anche tutti i piatti e le sottocategorie al suo interno.', async ()=>{
-    await sb.from('menu_items').delete().eq('category_id', id);
-    await sb.from('subcategories').delete().eq('category_id', id);
-    const { error } = await sb.from('categories').delete().eq('id', id);
-    if(error){ showToast('Errore: '+error.message, true); return; }
-    showToast('Categoria eliminata');
-    await loadAll();
-    renderTabContent();
-  });
-}
-
-async function addCategory(){
-  showPromptModal('Nuova categoria', [
-    {id:'nc_key', label:'Chiave interna (es. "antipasti", senza spazi)'},
-    {id:'nc_label', label:'Nome da mostrare (in italiano)'}
-  ], async (values)=>{
-    const errModal = document.getElementById('genericModalError');
-    if(!values.nc_key || !values.nc_label){ errModal.textContent = 'Compila entrambi i campi.'; return; }
-    closeGenericModal();
-    const title = {it:values.nc_label,en:'',es:'',de:'',fr:''};
-    showToast('Traduzione automatica in corso…');
-    await autoTranslateObj({title}, ['title']);
-    const { error } = await sb.from('categories').insert({key:values.nc_key, title, icon:'tapas', sort_order:(categories.length+1)*10});
-    if(error){ showToast('Errore: '+error.message, true); return; }
-    showToast('Categoria creata e tradotta automaticamente');
-    await loadAll();
-    renderTabContent();
-  }, 'Crea');
-}
-
-async function addSubcategory(catId){
-  showPromptModal('Nuova sottocategoria', [
-    {id:'ns_key', label:'Chiave interna (senza spazi)'},
-    {id:'ns_label', label:'Nome da mostrare (in italiano)'}
-  ], async (values)=>{
-    const errModal = document.getElementById('genericModalError');
-    if(!values.ns_key || !values.ns_label){ errModal.textContent = 'Compila entrambi i campi.'; return; }
-    closeGenericModal();
-    const title = {it:values.ns_label,en:'',es:'',de:'',fr:''};
-    showToast('Traduzione automatica in corso…');
-    await autoTranslateObj({title}, ['title']);
-    const { error } = await sb.from('subcategories').insert({category_id:catId, key:values.ns_key, title, sort_order:(subcategories.length+1)*10});
-    if(error){ showToast('Errore: '+error.message, true); return; }
-    showToast('Sottocategoria creata e tradotta automaticamente');
-    await loadAll();
-    renderTabContent();
-  }, 'Crea');
-}
-
-async function renameSubcategory(id, value){
-  const sub = subcategories.find(s=>s.id===id);
-  sub.title[editLang] = value;
-  if(editLang === 'it'){
-    showToast('Traduzione automatica in corso…');
-    await autoTranslateObj(sub, ['title']);
-  }
-  const { error } = await sb.from('subcategories').update({title:sub.title}).eq('id', id);
-  if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast('Sottocategoria aggiornata');
-  await loadAll();
-}
-
-async function deleteSubcategory(id){
-  showConfirmModal('Eliminare questa sottocategoria e tutti i suoi piatti?', async ()=>{
-    await sb.from('menu_items').delete().eq('subcategory_id', id);
-    const { error } = await sb.from('subcategories').delete().eq('id', id);
-    if(error){ showToast('Errore: '+error.message, true); return; }
-    showToast('Sottocategoria eliminata');
-    await loadAll();
-    renderTabContent();
-  });
-}
-
-function renderVenueTab(){
-  const address = venueInfo.address || {};
-  const hours = venueInfo.hours || {};
-  const phone = venueInfo.phone || {};
-  const degTitle = venueInfo.degustazione_title || {};
-  const degText = venueInfo.degustazione_text || {};
-  const storiaTitle = venueInfo.storia_title || {};
-  const storiaText = venueInfo.storia_text || {};
-  const storiaVisible = venueInfo.storia_visible !== false;
-  const degVisible = venueInfo.degustazione_visible !== false;
-  return `
-    ${langTabsHTML()}
-    <div class="card">
-      <div class="field"><label>Indirizzo (${LANG_LABEL[editLang]})</label><input id="v_address" value="${(address[editLang]||'').replace(/"/g,'&quot;')}"></div>
-      <div class="field"><label>Orari (${LANG_LABEL[editLang]})</label><input id="v_hours" value="${(hours[editLang]||'').replace(/"/g,'&quot;')}"></div>
-      <div class="field"><label>Telefono / Contatto (${LANG_LABEL[editLang]})</label><input id="v_phone" value="${(phone[editLang]||'').replace(/"/g,'&quot;')}"></div>
-      <button class="btn btn-primary btn-small" onclick="saveVenue()">Salva</button>
+/* ---------------- INFO TAB ---------------- */
+function renderInfo(){
+  const v = state.venue || {};
+  const root = document.getElementById('tabInfo');
+  root.innerHTML = `
+    <div class="infoCard">
+      <h3>Contatti</h3>
+      <div class="field"><label>Indirizzo (${state.lang.toUpperCase()})</label><input type="text" id="v_addr" value="${esc(t(v.address))}"></div>
+      <div class="field"><label>Orari (${state.lang.toUpperCase()})</label><input type="text" id="v_hours" value="${esc(t(v.hours))}"></div>
+      <div class="field"><label>Telefono / contatto (${state.lang.toUpperCase()})</label><input type="text" id="v_phone" value="${esc(t(v.phone))}"></div>
+      <button class="miniBtn" id="v_save_contact">Salva</button>
     </div>
-    <div class="card">
-      <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
-        <h3 style="margin:0;">"La Nostra Storia"</h3>
-        ${storiaVisible
-          ? `<button class="btn btn-danger btn-small" style="width:auto;" onclick="toggleStoriaVisible(false)">Elimina da home</button>`
-          : `<span style="display:flex; align-items:center; gap:8px;"><span class="muted" style="font-size:0.8rem;">Nascosta dalla home</span><button class="btn btn-primary btn-small" style="width:auto;" onclick="toggleStoriaVisible(true)">Ripristina</button></span>`
-        }
-      </div>
-      <div class="row" style="gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
-        <select onchange="updateVenueField('storia_position', this.value)" style="width:auto;">
-          <option value="sopra_logo" ${venueInfo.storia_position==='sopra_logo'?'selected':''}>Sopra il logo</option>
-          <option value="sotto_tagline" ${!venueInfo.storia_position||venueInfo.storia_position==='sotto_tagline'?'selected':''}>Posizione attuale (sotto Corralejo)</option>
-          <option value="sopra_griglia" ${venueInfo.storia_position==='sopra_griglia'?'selected':''}>Sopra le icone categorie</option>
-          <option value="meta_griglia" ${venueInfo.storia_position==='meta_griglia'?'selected':''}>In mezzo alla griglia</option>
-          <option value="sotto_griglia" ${venueInfo.storia_position==='sotto_griglia'?'selected':''}>Sotto le icone categorie</option>
-        </select>
-        <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Dopo quante icone <input type="number" min="0" max="20" value="${venueInfo.storia_grid_split||2}" style="width:50px;" onchange="updateVenueField('storia_grid_split', parseInt(this.value)||2)"></label>
-        <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Sfondo <input type="color" value="${venueInfo.storia_color||'#0b3d5c'}" onchange="updateVenueField('storia_color', this.value)"></label>
-        <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Testo <input type="color" value="${venueInfo.storia_text_color||'#fbfeff'}" onchange="updateVenueField('storia_text_color', this.value)"></label>
-        <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem;"><input type="checkbox" ${venueInfo.storia_bold?'checked':''} onchange="updateVenueField('storia_bold', this.checked)"> Grassetto</label>
-      </div>
-      <div class="field"><label>Titolo (${LANG_LABEL[editLang]})</label><input id="v_storia_title" value="${(storiaTitle[editLang]||'').replace(/"/g,'&quot;')}"></div>
-      <div class="field"><label>Testo (${LANG_LABEL[editLang]})</label><textarea id="v_storia_text" rows="5">${storiaText[editLang]||''}</textarea></div>
-      <button class="btn btn-primary btn-small" onclick="saveStoria()">Salva</button>
+    <div class="infoCard">
+      <h3>"La Nostra Storia"</h3>
+      <div class="field"><label>Titolo (${state.lang.toUpperCase()})</label><input type="text" id="v_storia_title" value="${esc(t(v.storia_title))}"></div>
+      <div class="field"><label>Testo (${state.lang.toUpperCase()})</label><textarea id="v_storia_text">${esc(t(v.storia_text))}</textarea></div>
+      <div class="checkRow" style="margin-bottom:12px;"><input type="checkbox" id="v_storia_visible" ${v.storia_visible?'checked':''}><label style="margin:0;">Visibile in home</label></div>
+      <button class="miniBtn" id="v_save_storia">Salva</button>
     </div>
-    <div class="card">
-      <h3 style="margin-bottom:12px;">Banner personalizzati</h3>
-      <p class="muted">Messaggi brevi mostrati in home accanto a "La nostra storia" (es. coperto, avvisi, promozioni). Aggiungili, disattivali o riordinali quando vuoi.</p>
-      ${[...banners].sort((a,b)=>a.sort_order-b.sort_order).map((b,idx,arr)=>`
-        <div class="row" style="margin:10px 0; align-items:center; gap:6px; flex-wrap:wrap; padding:10px; border:1px solid var(--line, #ddd); border-radius:8px;">
-          <button class="btn btn-outline btn-small" style="width:auto; padding:6px 10px;" onclick="moveBanner('${b.id}',-1)" ${idx===0?'disabled':''} title="Sposta su">↑</button>
-          <button class="btn btn-outline btn-small" style="width:auto; padding:6px 10px;" onclick="moveBanner('${b.id}',1)" ${idx===arr.length-1?'disabled':''} title="Sposta giù">↓</button>
-          <div class="field" style="flex:1; min-width:160px;"><input id="banner_text_${b.id}" value="${(b.text[editLang]||'').replace(/"/g,'&quot;')}"></div>
-          <button class="btn btn-primary btn-small" style="width:auto;" onclick="renameBanner('${b.id}', document.getElementById('banner_text_${b.id}').value)">Salva testo</button>
-          <select onchange="updateBannerField('${b.id}','position', this.value)" style="width:auto;">
-            <option value="sopra_logo" ${b.position==='sopra_logo'?'selected':''}>Sopra il logo</option>
-            <option value="sotto_tagline" ${!b.position||b.position==='sotto_tagline'?'selected':''}>Sotto Corralejo</option>
-            <option value="sopra_griglia" ${b.position==='sopra_griglia'?'selected':''}>Sopra le icone</option>
-            <option value="meta_griglia" ${b.position==='meta_griglia'?'selected':''}>In mezzo alla griglia</option>
-            <option value="sotto_griglia" ${b.position==='sotto_griglia'?'selected':''}>Sotto le icone</option>
-          </select>
-          <label style="display:flex; align-items:center; gap:4px; font-size:0.75rem;">Dopo n. icone <input type="number" min="0" max="20" value="${b.grid_split||2}" style="width:46px;" onchange="updateBannerField('${b.id}','grid_split', parseInt(this.value)||2)"></label>
-          <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Sfondo <input type="color" value="${b.color||'#e3f4fa'}" onchange="updateBannerField('${b.id}','color', this.value)"></label>
-          <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;">Testo <input type="color" value="${b.text_color||'#0b3d5c'}" onchange="updateBannerField('${b.id}','text_color', this.value)"></label>
-          <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem;"><input type="checkbox" ${b.bold?'checked':''} onchange="updateBannerField('${b.id}','bold', this.checked)"> Grassetto</label>
-          <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem; white-space:nowrap;"><input type="checkbox" ${b.active?'checked':''} onchange="toggleBannerActive('${b.id}', this.checked)"> Attivo</label>
-          <button class="btn btn-danger" onclick="deleteBanner('${b.id}')">Elimina</button>
-        </div>
-      `).join('')}
-      <button class="btn btn-primary btn-small" style="margin-top:10px;" onclick="addBanner()">+ Nuovo banner</button>
+    <div class="infoCard">
+      <h3>Banner personalizzati</h3>
+      <p style="font-size:13px;color:var(--muted);">Messaggi brevi mostrati in home (es. coperto, avvisi, promozioni).</p>
+      <div id="bannerList"></div>
+      <button class="addRowBtn" id="v_new_banner">+ Nuovo banner</button>
     </div>
   `;
+  document.getElementById('v_save_contact').onclick = async ()=>{
+    const address = v.address||{}, hours = v.hours||{}, phone = v.phone||{};
+    address[state.lang] = document.getElementById('v_addr').value;
+    hours[state.lang] = document.getElementById('v_hours').value;
+    phone[state.lang] = document.getElementById('v_phone').value;
+    const { error } = await sb.from('venue_info').update({address,hours,phone}).eq('id',1);
+    toast(error?'Errore':'Contatti salvati');
+    if(!error){ v.address=address; v.hours=hours; v.phone=phone; }
+  };
+  document.getElementById('v_save_storia').onclick = async ()=>{
+    const storia_title = v.storia_title||{}, storia_text = v.storia_text||{};
+    storia_title[state.lang] = document.getElementById('v_storia_title').value;
+    storia_text[state.lang] = document.getElementById('v_storia_text').value;
+    const storia_visible = document.getElementById('v_storia_visible').checked;
+    const { error } = await sb.from('venue_info').update({storia_title,storia_text,storia_visible}).eq('id',1);
+    toast(error?'Errore':'Storia salvata');
+    if(!error){ v.storia_title=storia_title; v.storia_text=storia_text; v.storia_visible=storia_visible; }
+  };
+  renderBanners();
+  document.getElementById('v_new_banner').onclick = async ()=>{
+    await sb.from('banners').insert({text:{it:'Nuovo banner'}, active:true, sort_order: state.banners.length});
+    await loadAll(); renderInfo(); toast('Banner creato');
+  };
 }
-
-
-
-async function saveStoria(){
-  const storiaTitle = venueInfo.storia_title || {};
-  const storiaText = venueInfo.storia_text || {};
-  storiaTitle[editLang] = document.getElementById('v_storia_title').value.trim();
-  storiaText[editLang] = document.getElementById('v_storia_text').value.trim();
-  if(editLang === 'it'){
-    showToast('Traduzione automatica in corso…');
-    const wrapper = { storiaTitle, storiaText };
-    await autoTranslateObj(wrapper, ['storiaTitle','storiaText']);
-  }
-  const { error } = await sb.from('venue_info').update({storia_title: storiaTitle, storia_text: storiaText}).eq('id',1);
-  if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast('"La Nostra Storia" aggiornata');
-  await loadAll();
-  renderTabContent();
-}
-
-async function saveDegustazione(){
-  const degTitle = venueInfo.degustazione_title || {};
-  const degText = venueInfo.degustazione_text || {};
-  degTitle[editLang] = document.getElementById('v_deg_title').value.trim();
-  degText[editLang] = document.getElementById('v_deg_text').value.trim();
-  if(editLang === 'it'){
-    showToast('Traduzione automatica in corso…');
-    const wrapper = { degTitle, degText };
-    await autoTranslateObj(wrapper, ['degTitle','degText']);
-  }
-  const { error } = await sb.from('venue_info').update({degustazione_title: degTitle, degustazione_text: degText}).eq('id',1);
-  if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast('Degustazione aggiornata');
-  await loadAll();
-  renderTabContent();
-}
-
-async function saveVenue(){
-  const address = venueInfo.address || {};
-  const hours = venueInfo.hours || {};
-  const phone = venueInfo.phone || {};
-  address[editLang] = document.getElementById('v_address').value.trim();
-  hours[editLang] = document.getElementById('v_hours').value.trim();
-  phone[editLang] = document.getElementById('v_phone').value.trim();
-  if(editLang === 'it'){
-    showToast('Aggiornamento in corso…');
-    // L'indirizzo NON va tradotto (è un nome proprio/via) - si copia identico
-    ['en','es','de','fr'].forEach(l=> address[l] = address.it);
-    const wrapper = { hours, phone };
-    await autoTranslateObj(wrapper, ['hours','phone']);
-  }
-  const { error } = await sb.from('venue_info').update({address, hours, phone}).eq('id',1);
-  if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast('Info locale aggiornate');
-  await loadAll();
-  renderTabContent();
-}
-
-
-async function moveBanner(id, direction){
-  const sorted = [...banners].sort((a,b)=>a.sort_order-b.sort_order);
-  const idx = sorted.findIndex(b=>b.id===id);
-  const swapIdx = idx + direction;
-  if(swapIdx < 0 || swapIdx >= sorted.length) return;
-  const a = sorted[idx], b = sorted[swapIdx];
-  const tmp = a.sort_order;
-  const { error: e1 } = await sb.from('banners').update({sort_order: b.sort_order}).eq('id', a.id);
-  const { error: e2 } = await sb.from('banners').update({sort_order: tmp}).eq('id', b.id);
-  if(e1 || e2){ showToast('Errore: ' + ((e1||e2).message), true); return; }
-  showToast('Ordine aggiornato');
-  await loadAll();
-  renderTabContent();
-}
-
-async function toggleBannerActive(id, checked){
-  const { error } = await sb.from('banners').update({active: checked}).eq('id', id);
-  if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast(checked ? 'Banner attivato' : 'Banner disattivato');
-  await loadAll();
-  renderTabContent();
-}
-
-async function renameBanner(id, value){
-  const banner = banners.find(b=>b.id===id);
-  banner.text[editLang] = value;
-  if(editLang === 'it'){
-    showToast('Traduzione automatica in corso…');
-    await autoTranslateObj(banner, ['text']);
-  }
-  const { error } = await sb.from('banners').update({text: banner.text}).eq('id', id);
-  if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast('Banner aggiornato');
-  await loadAll();
-}
-
-async function deleteBanner(id){
-  showConfirmModal('Eliminare questo banner?', async ()=>{
-    const { error } = await sb.from('banners').delete().eq('id', id);
-    if(error){ showToast('Errore: '+error.message, true); return; }
-    showToast('Banner eliminato');
-    await loadAll();
-    renderTabContent();
+function renderBanners(){
+  const list = document.getElementById('bannerList');
+  list.innerHTML = state.banners.map(b=>`
+    <div class="subRow" data-banner="${b.id}">
+      <input type="text" data-bfield="text" data-id="${b.id}" value="${esc(t(b.text))}">
+      <label class="checkRow" style="white-space:nowrap;"><input type="checkbox" data-bfield="active" data-id="${b.id}" ${b.active?'checked':''}> Attivo</label>
+      <button class="miniBtn" data-bact="save" data-id="${b.id}">Salva</button>
+      <button class="miniBtn danger" data-bact="del" data-id="${b.id}">Elimina</button>
+    </div>`).join('') || '<p style="font-size:13px;color:var(--muted);">Nessun banner.</p>';
+  list.querySelectorAll('[data-bact]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const id = btn.dataset.id;
+      if(btn.dataset.bact==='del'){
+        if(!confirm('Eliminare il banner?')) return;
+        await sb.from('banners').delete().eq('id', id);
+      } else {
+        const b = state.banners.find(x=>x.id===id);
+        const textVal = list.querySelector(`input[data-bfield="text"][data-id="${id}"]`).value;
+        const activeVal = list.querySelector(`input[data-bfield="active"][data-id="${id}"]`).checked;
+        b.text = b.text||{}; b.text[state.lang] = textVal;
+        await sb.from('banners').update({text:b.text, active:activeVal}).eq('id', id);
+      }
+      await loadAll(); renderInfo(); toast('Fatto');
+    };
   });
 }
 
-function addBanner(){
-  showPromptModal('Nuovo banner', [
-    {id:'nb_text', label:'Testo (in italiano)'}
-  ], async (values)=>{
-    const errModal = document.getElementById('genericModalError');
-    if(!values.nb_text){ errModal.textContent = 'Compila il campo.'; return; }
-    closeGenericModal();
-    const wrapper = {text:{it:values.nb_text,en:'',es:'',de:'',fr:''}};
-    showToast('Traduzione automatica in corso…');
-    await autoTranslateObj(wrapper, ['text']);
-    const { error } = await sb.from('banners').insert({text: wrapper.text, active:true, sort_order:(banners.length+1)*10});
-    if(error){ showToast('Errore: '+error.message, true); return; }
-    showToast('Banner creato e tradotto automaticamente');
-    await loadAll();
-    renderTabContent();
-  }, 'Crea');
-}
-
-
-async function toggleStoriaVisible(checked){
-  const { error } = await sb.from('venue_info').update({storia_visible: checked}).eq('id',1);
-  if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast(checked ? 'Storia visibile in home' : 'Storia nascosta dalla home');
-  await loadAll();
-  renderTabContent();
-}
-async function toggleDegustazioneVisible(checked){
-  const { error } = await sb.from('venue_info').update({degustazione_visible: checked}).eq('id',1);
-  if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast(checked ? 'Degustazione visibile in home' : 'Degustazione nascosta dalla home');
-  await loadAll();
-  renderTabContent();
-}
-
-
-async function updateVenueField(field, value){
-  const { error } = await sb.from('venue_info').update({[field]: value}).eq('id',1);
-  if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast('Aggiornato');
-  await loadAll();
-  renderTabContent();
-}
-async function updateBannerField(id, field, value){
-  const { error } = await sb.from('banners').update({[field]: value}).eq('id', id);
-  if(error){ showToast('Errore: '+error.message, true); return; }
-  showToast('Aggiornato');
-  await loadAll();
-  renderTabContent();
-}
-
-init();
+initAuth();
 </script>
 </body>
 </html>
