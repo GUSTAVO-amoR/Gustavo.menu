@@ -65,6 +65,9 @@
   .dishRow{display:flex;align-items:center;gap:12px;padding:9px 8px;border-radius:8px;}
   .dishRow:hover{background:var(--cream);}
   .dishRow.dimmed{display:none;}
+  .dishRow.hiddenDish{opacity:0.45;}
+  .hiddenTag{font-size:0.68rem;font-weight:600;color:#b23b3b;text-transform:uppercase;letter-spacing:0.5px;margin-left:4px;}
+  .miniBtn.toggleVis{background:#eef1ea;}
   .dishThumb{width:44px;height:44px;border-radius:8px;object-fit:cover;background:#f1efe9;flex-shrink:0;border:1px solid var(--border);}
   .dishThumb.empty{display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);text-align:center;}
   .dishInfo{flex:1;min-width:0;}
@@ -310,19 +313,22 @@ function renderPiatti(){
 
   root.querySelectorAll('.miniBtn.edit').forEach(b=> b.onclick = ()=> openDrawer('edit', b.dataset.id));
   root.querySelectorAll('.miniBtn.danger').forEach(b=> b.onclick = ()=> deleteItem(b.dataset.id));
+  root.querySelectorAll('.miniBtn.toggleVis').forEach(b=> b.onclick = ()=> toggleVisibility(b.dataset.id, b.dataset.visible==='1'));
   root.querySelectorAll('.addRowBtn').forEach(b=> b.onclick = ()=> openDrawer('new', null, {category_id:b.dataset.cat, subcategory_id:b.dataset.sub||null}));
   applySearchFilter();
 }
 function dishRowHtml(i){
   const photo = i.photo_url ? `<img class="dishThumb" src="${i.photo_url}">` : `<div class="dishThumb empty">no foto</div>`;
   const meta = [i.price, (i.allergens||[]).join(', ')].filter(Boolean).join(' · ');
-  return `<div class="dishRow" data-name="${esc(t(i.name)).toLowerCase()}">
+  const hidden = i.visible === false;
+  return `<div class="dishRow ${hidden?'hiddenDish':''}" data-name="${esc(t(i.name)).toLowerCase()}">
     ${photo}
     <div class="dishInfo">
-      <div class="name">${esc(t(i.name))}${i.recommended?' ★':''}</div>
+      <div class="name">${esc(t(i.name))}${i.recommended?' ★':''}${hidden?' <span class="hiddenTag">nascosto</span>':''}</div>
       <div class="meta">${esc(meta)}</div>
     </div>
     <div class="dishActions">
+      <button class="miniBtn toggleVis" data-id="${i.id}" data-visible="${hidden?'0':'1'}">${hidden?'Mostra':'Nascondi'}</button>
       <button class="miniBtn edit" data-id="${i.id}">Modifica</button>
       <button class="miniBtn danger" data-id="${i.id}">Elimina</button>
     </div>
@@ -339,6 +345,13 @@ function applySearchFilter(){
     d.open = anyVisible;
   });
 }
+async function toggleVisibility(id, currentlyVisible){
+  const { error } = await sb.from('menu_items').update({ visible: !currentlyVisible }).eq('id', id);
+  if(error){ toast('Errore: ' + error.message); return; }
+  await loadAll();
+  renderPiatti();
+  toast(currentlyVisible ? 'Piatto nascosto dal menu clienti' : 'Piatto rimesso nel menu clienti');
+}
 async function deleteItem(id){
   if(!confirm('Eliminare questa voce?')) return;
   const { error } = await sb.from('menu_items').delete().eq('id', id);
@@ -353,7 +366,7 @@ function openDrawer(mode, id, presetIds){
   state.drawerMode = mode; state.pendingPhotoFile = null;
   const item = mode==='edit' ? state.items.find(i=>i.id===id) : {
     id:null, category_id:presetIds.category_id, subcategory_id:presetIds.subcategory_id,
-    name:{}, ingredients:{}, group_label:{}, price:'', allergens:[], recommended:false, photo_url:null, sort_order:0
+    name:{}, ingredients:{}, group_label:{}, price:'', allergens:[], recommended:false, visible:true, photo_url:null, sort_order:0
   };
   state.drawerData = JSON.parse(JSON.stringify(item));
   document.getElementById('drawerTitle').textContent = mode==='edit' ? 'Modifica voce' : 'Nuova voce';
@@ -386,6 +399,7 @@ function renderDrawerBody(){
     <div class="rowFields">
       <div class="field"><label>Prezzo</label><input type="text" id="f_price" value="${esc(d.price||'')}"></div>
       <div class="field checkRow" style="align-self:center;"><input type="checkbox" id="f_rec" ${d.recommended?'checked':''}><label style="margin:0;text-transform:none;font-weight:500;">Consigliato</label></div>
+      <div class="field checkRow" style="align-self:center;"><input type="checkbox" id="f_visible" ${d.visible!==false?'checked':''}><label style="margin:0;text-transform:none;font-weight:500;">Visibile nel menu clienti</label></div>
     </div>
     <div class="field"><label>Allergeni</label><div class="allergenGrid">${allergenChips}</div></div>
     <div class="field"><label>Foto piatto</label><input type="file" id="f_photo" accept="image/*"></div>
@@ -420,6 +434,7 @@ function saveDrawerFieldsToModel(){
   d.group_label[state.lang] = document.getElementById('f_group').value;
   d.price = document.getElementById('f_price').value;
   d.recommended = document.getElementById('f_rec').checked;
+  d.visible = document.getElementById('f_visible').checked;
 }
 document.getElementById('drawerSave').onclick = async ()=>{
   saveDrawerFieldsToModel();
@@ -437,6 +452,7 @@ document.getElementById('drawerSave').onclick = async ()=>{
     category_id: d.category_id, subcategory_id: d.subcategory_id || null,
     name: d.name, ingredients: d.ingredients, group_label: d.group_label,
     price: d.price, allergens: d.allergens || [], recommended: !!d.recommended,
+    visible: d.visible !== false,
     photo_url, sort_order: d.sort_order || 0
   };
   let error;
