@@ -557,17 +557,30 @@
     vertical-align:middle;
     position:relative; top:-1px;
   }
-  .portion-list{
-    display:flex; flex-direction:column; gap:4px; align-items:flex-end;
+  .item-price.has-portions{
+    background:var(--celeste-soft);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:6px 0;
+    white-space:normal;
   }
-  .portion-chip{
-    display:flex; align-items:center; gap:6px; font-size:0.78rem;
+  .portion-table{
+    display:flex;
   }
-  .portion-chip .portion-label{
-    font-size:0.62rem; text-transform:uppercase; letter-spacing:0.5px; opacity:0.65;
+  .portion-col{
+    display:flex; flex-direction:column; align-items:center;
+    padding:0 12px;
+    min-width:64px;
   }
-  .portion-chip .portion-value{
-    font-weight:600;
+  .portion-col + .portion-col{
+    border-left:1px solid var(--line);
+  }
+  .portion-col .portion-label{
+    font-size:0.6rem; text-transform:uppercase; letter-spacing:0.5px; opacity:0.65;
+    margin-bottom:2px;
+  }
+  .portion-col .portion-value{
+    font-weight:700; font-size:0.85rem; white-space:nowrap;
   }
   .allergen-row{
     display:flex; gap:6px; margin-top:6px;
@@ -978,8 +991,8 @@ function renderItemRow(it, i, crumb, forceIt){
         <p class="item-ingredients">${tr(it.ingredients)}</p>
         ${it.allergens && it.allergens.length ? `<div class="allergen-row">${it.allergens.map(a=>`<span class="allergen-icon" title="${UI[state.lang].allergenLabels[a]||a}" aria-label="${UI[state.lang].allergenLabels[a]||a}">${allergenIcon(a)}</span>`).join('')}</div>` : ''}
       </div>
-      <div class="item-price">${it.portions && it.portions.length
-        ? `<div class="portion-list">${it.portions.map(p=>`<span class="portion-chip"><span class="portion-label">${UI[state.lang].portionLabels[p.key]||p.key}</span><span class="portion-value">${p.price}</span></span>`).join('')}</div>`
+      <div class="item-price ${it.portions && it.portions.length ? 'has-portions' : ''}">${it.portions && it.portions.length
+        ? `<div class="portion-table">${it.portions.map(p=>`<div class="portion-col"><span class="portion-label">${UI[state.lang].portionLabels[p.key]||p.key}</span><span class="portion-value">${p.price}</span></div>`).join('')}</div>`
         : it.price}</div>
     </div>
   `;
