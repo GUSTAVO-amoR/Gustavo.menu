@@ -635,7 +635,7 @@ async function loadMenuData(){
   const [catsRes, subsRes, itemsRes, venueRes, bannersRes] = await Promise.all([
     sb.from('categories').select('*').order('sort_order'),
     sb.from('subcategories').select('*').order('sort_order'),
-    sb.from('menu_items').select('*').order('sort_order'),
+    sb.from('menu_items').select('*').eq('visible', true).order('sort_order'),
     sb.from('venue_info').select('*').eq('id', 1).maybeSingle(),
     sb.from('banners').select('*').eq('active', true).order('sort_order')
   ]);
