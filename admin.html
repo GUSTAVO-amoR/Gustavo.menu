@@ -71,6 +71,11 @@
   .dishArrows{display:flex;flex-direction:column;gap:2px;}
   .dishArrows .arrowBtn{padding:2px 7px;font-size:11px;}
   .dailyTag{font-size:0.68rem;font-weight:600;color:#2f7ab2;text-transform:uppercase;letter-spacing:0.5px;margin-left:4px;}
+  .portionsGrid{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+  .portionRow{display:flex;align-items:center;gap:10px;}
+  .portionRow .checkRow{display:flex;align-items:center;gap:6px;min-width:170px;font-weight:500;}
+  .portionRow input[type="text"]{flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;}
+  .portionRow input[type="text"]:disabled{opacity:0.4;}
   .dishThumb{width:44px;height:44px;border-radius:8px;object-fit:cover;background:#f1efe9;flex-shrink:0;border:1px solid var(--border);}
   .dishThumb.empty{display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);text-align:center;}
   .dishInfo{flex:1;min-width:0;}
@@ -195,6 +200,11 @@ const ALLERGENS = [
   {key:'arachidi', label:'Arachidi'}, {key:'soia', label:'Soia'},
   {key:'sedano', label:'Sedano'}, {key:'senape', label:'Senape'},
   {key:'sesamo', label:'Sesamo'}, {key:'lupini', label:'Lupini'}
+];
+const PORTION_TYPES = [
+  {key:'tapas', label:'Tapas'},
+  {key:'mezza', label:'Mezza porzione'},
+  {key:'intera', label:'Porzione intera'}
 ];
 
 let state = {
@@ -322,7 +332,10 @@ function renderPiatti(){
 }
 function dishRowHtml(i, idx, groupLen){
   const photo = i.photo_url ? `<img class="dishThumb" src="${i.photo_url}">` : `<div class="dishThumb empty">no foto</div>`;
-  const priceLabel = i.price_half ? `Mezza ${i.price_half} · Intera ${i.price||''}` : (i.price||'');
+  const portions = i.portions || [];
+  const priceLabel = portions.length
+    ? portions.map(p=>{ const def = PORTION_TYPES.find(pt=>pt.key===p.key); return `${def?def.label:p.key} ${p.price}`; }).join(' · ')
+    : (i.price||'');
   const meta = [priceLabel, (i.allergens||[]).join(', ')].filter(Boolean).join(' · ');
   const hidden = i.visible === false;
   return `<div class="dishRow ${hidden?'hiddenDish':''}" data-name="${esc(t(i.name)).toLowerCase()}">
@@ -382,7 +395,7 @@ function openDrawer(mode, id, presetIds){
   state.drawerMode = mode; state.pendingPhotoFile = null;
   const item = mode==='edit' ? state.items.find(i=>i.id===id) : {
     id:null, category_id:presetIds.category_id, subcategory_id:presetIds.subcategory_id,
-    name:{}, ingredients:{}, group_label:{}, price:'', price_half:'', allergens:[], recommended:false, daily_special:false, visible:true, photo_url:null, sort_order:0
+    name:{}, ingredients:{}, group_label:{}, price:'', portions:[], allergens:[], recommended:false, daily_special:false, visible:true, photo_url:null, sort_order:0
   };
   state.drawerData = JSON.parse(JSON.stringify(item));
   document.getElementById('drawerTitle').textContent = mode==='edit' ? 'Modifica voce' : 'Nuova voce';
@@ -420,8 +433,18 @@ function renderDrawerBody(){
     <div class="field"><label>Ingredienti (${state.lang.toUpperCase()})</label><textarea id="f_ing">${esc(t(d.ingredients))}</textarea></div>
     <div class="field"><label>Sotto-gruppo (opzionale, es. "Rossi · Canari")</label><input type="text" id="f_group" value="${esc(t(d.group_label))}"></div>
     <div class="rowFields">
-      <div class="field"><label>Prezzo (porzione intera)</label><input type="text" id="f_price" value="${esc(d.price||'')}"></div>
-      <div class="field"><label>Prezzo mezza porzione (facoltativo)</label><input type="text" id="f_price_half" value="${esc(d.price_half||'')}" placeholder="es. 4€"></div>
+      <div class="field"><label>Prezzo (usato se non imposti porzioni sotto)</label><input type="text" id="f_price" value="${esc(d.price||'')}"></div>
+    </div>
+    <div class="field"><label>Porzioni disponibili (opzionale: spunta quelle che vuoi offrire per questo piatto)</label>
+      <div class="portionsGrid">
+        ${PORTION_TYPES.map(pt=>{
+          const existing = (d.portions||[]).find(p=>p.key===pt.key);
+          return `<div class="portionRow">
+            <label class="checkRow"><input type="checkbox" class="f_portion_on" data-key="${pt.key}" ${existing?'checked':''}>${pt.label}</label>
+            <input type="text" class="f_portion_price" data-key="${pt.key}" placeholder="prezzo, es. 5€" value="${esc(existing?existing.price:'')}" ${existing?'':'disabled'}>
+          </div>`;
+        }).join('')}
+      </div>
     </div>
     <div class="rowFields">
       <div class="field checkRow" style="align-self:center;"><input type="checkbox" id="f_rec" ${d.recommended?'checked':''}><label style="margin:0;text-transform:none;font-weight:500;">Consigliato</label></div>
@@ -440,6 +463,11 @@ function renderDrawerBody(){
     d.subcategory_id = e.target.value || null;
   };
   document.getElementById('f_translate').onclick = ()=> translateDish();
+  body.querySelectorAll('.f_portion_on').forEach(cb=> cb.onchange = ()=>{
+    const priceInput = body.querySelector(`.f_portion_price[data-key="${cb.dataset.key}"]`);
+    priceInput.disabled = !cb.checked;
+    if(cb.checked) priceInput.focus();
+  });
   body.querySelectorAll('[data-dlang]').forEach(b=> b.onclick = ()=>{
     saveDrawerFieldsToModel();
     state.lang = b.dataset.dlang;
@@ -469,7 +497,10 @@ function saveDrawerFieldsToModel(){
   d.ingredients[state.lang] = document.getElementById('f_ing').value;
   d.group_label[state.lang] = document.getElementById('f_group').value;
   d.price = document.getElementById('f_price').value;
-  d.price_half = document.getElementById('f_price_half').value;
+  d.portions = Array.from(document.querySelectorAll('.f_portion_on')).filter(cb=>cb.checked).map(cb=>{
+    const priceInput = document.querySelector(`.f_portion_price[data-key="${cb.dataset.key}"]`);
+    return { key: cb.dataset.key, price: priceInput.value };
+  });
   d.recommended = document.getElementById('f_rec').checked;
   d.daily_special = document.getElementById('f_daily').checked;
   d.visible = document.getElementById('f_visible').checked;
@@ -502,9 +533,28 @@ async function translateDish(){
   renderDrawerBody();
   toast('Traduzione completata, controlla e correggi se serve');
 }
+async function autofillMissingTranslations(d){
+  const nameIt = (d.name && d.name.it) || '';
+  const ingIt = (d.ingredients && d.ingredients.it) || '';
+  if(!nameIt && !ingIt) return;
+  const targets = LANGS.map(l=>l.key).filter(k=>k!=='it');
+  const missing = targets.filter(target=> !(d.name && d.name[target]) || !(d.ingredients && d.ingredients[target]));
+  if(!missing.length) return;
+  for(const target of missing){
+    const needName = !(d.name && d.name[target]);
+    const needIng = !(d.ingredients && d.ingredients[target]);
+    const [n, ing] = await Promise.all([
+      needName ? translateOne(nameIt, target) : Promise.resolve(''),
+      needIng ? translateOne(ingIt, target) : Promise.resolve('')
+    ]);
+    if(needName && n) d.name[target] = n;
+    if(needIng && ing) d.ingredients[target] = ing;
+  }
+}
 document.getElementById('drawerSave').onclick = async ()=>{
   saveDrawerFieldsToModel();
   const d = state.drawerData;
+  await autofillMissingTranslations(d);
   let photo_url = d.photo_url;
   if(state.pendingPhotoFile){
     const file = state.pendingPhotoFile;
@@ -517,7 +567,7 @@ document.getElementById('drawerSave').onclick = async ()=>{
   const payload = {
     category_id: d.category_id, subcategory_id: d.subcategory_id || null,
     name: d.name, ingredients: d.ingredients, group_label: d.group_label,
-    price: d.price, price_half: d.price_half || null, allergens: d.allergens || [], recommended: !!d.recommended,
+    price: d.price, portions: d.portions || [], allergens: d.allergens || [], recommended: !!d.recommended,
     daily_special: !!d.daily_special,
     visible: d.visible !== false,
     photo_url, sort_order: d.sort_order || 0
