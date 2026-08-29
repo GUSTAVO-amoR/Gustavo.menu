@@ -422,6 +422,14 @@ function renderDrawerBody(){
   const catOptions = state.categories.map(c2=>`<option value="${c2.id}" ${d.category_id===c2.id?'selected':''}>${esc(t(c2.title))}</option>`).join('');
   const subsForCat = state.subcategories.filter(s=>s.category_id===d.category_id);
   const subOptions = `<option value="">— nessuna —</option>` + subsForCat.map(s2=>`<option value="${s2.id}" ${d.subcategory_id===s2.id?'selected':''}>${esc(t(s2.title))}</option>`).join('');
+  const mezzaEntry = (d.portions||[]).find(p=>p.key==='mezza');
+  const interaEntry = (d.portions||[]).find(p=>p.key==='intera');
+  const tapasEntry = (d.portions||[]).find(p=>p.key==='tapas');
+  const hasMezzaIntera = !!mezzaEntry || !!interaEntry;
+  const hasTapas = !!tapasEntry;
+  const mezzaPrice = mezzaEntry ? mezzaEntry.price : '';
+  const interaPrice = interaEntry ? interaEntry.price : '';
+  const tapasPrice = tapasEntry ? tapasEntry.price : '';
   body.innerHTML = `
     <div class="drawerLangs">${langTabs}<button type="button" class="miniBtn" id="f_translate" style="margin-left:auto;">Traduci automaticamente (da IT)</button></div>
     <img id="photoPreview" class="photoPreview ${d.photo_url?'show':''}" src="${d.photo_url||''}">
@@ -435,17 +443,13 @@ function renderDrawerBody(){
     <div class="rowFields">
       <div class="field"><label>Prezzo (usato se non imposti porzioni sotto)</label><input type="text" id="f_price" value="${esc(d.price||'')}"></div>
     </div>
-    <div class="field"><label>Porzioni disponibili (opzionale: spunta quelle che vuoi offrire per questo piatto)</label>
-      <div class="portionsGrid">
-        ${PORTION_TYPES.map(pt=>{
-          const existing = (d.portions||[]).find(p=>p.key===pt.key);
-          return `<div class="portionRow">
-            <label class="checkRow"><input type="checkbox" class="f_portion_on" data-key="${pt.key}" ${existing?'checked':''}>${pt.label}</label>
-            <input type="text" class="f_portion_price" data-key="${pt.key}" placeholder="prezzo, es. 5€" value="${esc(existing?existing.price:'')}" ${existing?'':'disabled'}>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>
+    <div class="field checkRow"><input type="checkbox" id="f_has_portions" ${hasMezzaIntera?'checked':''}><label style="margin:0;text-transform:none;font-weight:500;">Attiva prezzi per porzione</label></div>
+    ${hasMezzaIntera ? `<div class="rowFields">
+      <div class="field"><label>Prezzo mezza porzione</label><input type="text" id="f_price_mezza" value="${esc(mezzaPrice)}" placeholder="es. 5€"></div>
+      <div class="field"><label>Prezzo porzione intera</label><input type="text" id="f_price_intera" value="${esc(interaPrice)}" placeholder="es. 9€"></div>
+    </div>` : ''}
+    <div class="field checkRow"><input type="checkbox" id="f_tapas_on" ${hasTapas?'checked':''}><label style="margin:0;text-transform:none;font-weight:500;">Disponibile anche come Tapas</label></div>
+    ${hasTapas ? `<div class="field"><label>Prezzo Tapas</label><input type="text" id="f_price_tapas" value="${esc(tapasPrice)}" placeholder="es. 4€"></div>` : ''}
     <div class="rowFields">
       <div class="field checkRow" style="align-self:center;"><input type="checkbox" id="f_rec" ${d.recommended?'checked':''}><label style="margin:0;text-transform:none;font-weight:500;">Consigliato</label></div>
       <div class="field checkRow" style="align-self:center;"><input type="checkbox" id="f_daily" ${d.daily_special?'checked':''}><label style="margin:0;text-transform:none;font-weight:500;">Piatto del giorno</label></div>
@@ -463,11 +467,27 @@ function renderDrawerBody(){
     d.subcategory_id = e.target.value || null;
   };
   document.getElementById('f_translate').onclick = ()=> translateDish();
-  body.querySelectorAll('.f_portion_on').forEach(cb=> cb.onchange = ()=>{
-    const priceInput = body.querySelector(`.f_portion_price[data-key="${cb.dataset.key}"]`);
-    priceInput.disabled = !cb.checked;
-    if(cb.checked) priceInput.focus();
-  });
+  document.getElementById('f_has_portions').onchange = (e)=>{
+    saveDrawerFieldsToModel();
+    d.portions = d.portions || [];
+    if(e.target.checked){
+      if(!d.portions.some(p=>p.key==='mezza')) d.portions.push({key:'mezza', price:''});
+      if(!d.portions.some(p=>p.key==='intera')) d.portions.push({key:'intera', price:''});
+    } else {
+      d.portions = d.portions.filter(p=> p.key!=='mezza' && p.key!=='intera');
+    }
+    renderDrawerBody();
+  };
+  document.getElementById('f_tapas_on').onchange = (e)=>{
+    saveDrawerFieldsToModel();
+    d.portions = d.portions || [];
+    if(e.target.checked){
+      if(!d.portions.some(p=>p.key==='tapas')) d.portions.push({key:'tapas', price:''});
+    } else {
+      d.portions = d.portions.filter(p=> p.key!=='tapas');
+    }
+    renderDrawerBody();
+  };
   body.querySelectorAll('[data-dlang]').forEach(b=> b.onclick = ()=>{
     saveDrawerFieldsToModel();
     state.lang = b.dataset.dlang;
@@ -497,10 +517,17 @@ function saveDrawerFieldsToModel(){
   d.ingredients[state.lang] = document.getElementById('f_ing').value;
   d.group_label[state.lang] = document.getElementById('f_group').value;
   d.price = document.getElementById('f_price').value;
-  d.portions = Array.from(document.querySelectorAll('.f_portion_on')).filter(cb=>cb.checked).map(cb=>{
-    const priceInput = document.querySelector(`.f_portion_price[data-key="${cb.dataset.key}"]`);
-    return { key: cb.dataset.key, price: priceInput.value };
-  });
+  d.portions = d.portions || [];
+  const mezzaInput = document.getElementById('f_price_mezza');
+  const interaInput = document.getElementById('f_price_intera');
+  const tapasInput = document.getElementById('f_price_tapas');
+  const setPortionPrice = (key, val)=>{
+    const existing = d.portions.find(p=>p.key===key);
+    if(existing) existing.price = val;
+  };
+  if(mezzaInput) setPortionPrice('mezza', mezzaInput.value);
+  if(interaInput) setPortionPrice('intera', interaInput.value);
+  if(tapasInput) setPortionPrice('tapas', tapasInput.value);
   d.recommended = document.getElementById('f_rec').checked;
   d.daily_special = document.getElementById('f_daily').checked;
   d.visible = document.getElementById('f_visible').checked;
