@@ -395,7 +395,8 @@ function openDrawer(mode, id, presetIds){
   state.drawerMode = mode; state.pendingPhotoFile = null;
   const item = mode==='edit' ? state.items.find(i=>i.id===id) : {
     id:null, category_id:presetIds.category_id, subcategory_id:presetIds.subcategory_id,
-    name:{}, ingredients:{}, group_label:{}, price:'', portions:[], allergens:[], recommended:false, daily_special:false, visible:true, photo_url:null, sort_order:0
+    name:{}, ingredients:{}, group_label:{}, price:'', portions:[], allergens:[], recommended:false, daily_special:false, visible:true, photo_url:null,
+    sort_order: nextSortOrder(presetIds.category_id, presetIds.subcategory_id)
   };
   state.drawerData = JSON.parse(JSON.stringify(item));
   document.getElementById('drawerTitle').textContent = mode==='edit' ? 'Modifica voce' : 'Nuova voce';
@@ -461,10 +462,12 @@ function renderDrawerBody(){
   document.getElementById('f_category').onchange = (e)=>{
     d.category_id = e.target.value;
     d.subcategory_id = null;
+    d.sort_order = nextSortOrder(d.category_id, d.subcategory_id);
     renderDrawerBody();
   };
   document.getElementById('f_subcategory').onchange = (e)=>{
     d.subcategory_id = e.target.value || null;
+    d.sort_order = nextSortOrder(d.category_id, d.subcategory_id);
   };
   document.getElementById('f_translate').onclick = ()=> translateDish();
   document.getElementById('f_has_portions').onchange = (e)=>{
@@ -683,6 +686,11 @@ async function handleCatAction(act, id){
     await swapOrder('subcategories', siblings, id, act==='subUp'?-1:1);
     await loadAll(); renderCategorie();
   }
+}
+function nextSortOrder(category_id, subcategory_id){
+  const siblings = state.items.filter(x=> x.category_id===category_id && x.subcategory_id===subcategory_id);
+  if(!siblings.length) return 0;
+  return Math.max(...siblings.map(x=> x.sort_order || 0)) + 1;
 }
 async function swapOrder(table, list, id, dir){
   const idx = list.findIndex(x=>x.id===id);
