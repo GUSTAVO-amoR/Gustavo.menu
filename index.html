@@ -561,23 +561,24 @@
     background:var(--celeste-soft);
     border:1px solid var(--line);
     border-radius:12px;
-    padding:6px 0;
+    padding:8px 14px;
     white-space:normal;
   }
   .portion-table{
     display:flex;
+    flex-direction:column;
   }
   .portion-col{
-    display:flex; flex-direction:column; align-items:center;
-    padding:0 12px;
-    min-width:64px;
+    display:flex; flex-direction:row; align-items:center; justify-content:space-between;
+    gap:14px;
+    padding:5px 0;
+    min-width:120px;
   }
   .portion-col + .portion-col{
-    border-left:1px solid var(--line);
+    border-top:1px solid var(--line);
   }
   .portion-col .portion-label{
     font-size:0.6rem; text-transform:uppercase; letter-spacing:0.5px; opacity:0.65;
-    margin-bottom:2px;
   }
   .portion-col .portion-value{
     font-weight:700; font-size:0.85rem; white-space:nowrap;
