@@ -691,7 +691,7 @@ async function loadMenuData(){
 
   const menu = {};
   cats.forEach(cat=>{
-    menu[cat.key] = { icon: cat.icon, title: cat.title };
+    menu[cat.key] = { icon: cat.icon, title: cat.title, icon_url: cat.icon_url, icon_display_size: cat.icon_display_size };
   });
   subs.forEach(sub=>{
     const cat = cats.find(c=>c.id === sub.category_id);
@@ -921,9 +921,10 @@ function gridWithMidBanners(cardHtmls){
 function renderHome(){
   const cardHtmls = Object.keys(MENU).map(key=>{
     const sec = MENU[key];
-    const iconSrc = CATEGORY_ICON_DATA[key];
+    const iconSrc = sec.icon_url || CATEGORY_ICON_DATA[key];
+    const iconSizeStyle = sec.icon_display_size ? ` style="width:${sec.icon_display_size}px;height:${sec.icon_display_size}px;"` : '';
     return `<button class="section-card" onclick="openSection('${key}')" aria-label="${tr(sec.title)}">
-      ${iconSrc ? `<img class="section-card-icon${key==='bebidas' ? ' icon-bevande' : ''}${key==='antipasti' ? ' icon-large' : ''}${key==='postres' ? ' icon-large' : ''}${key==='pizze_fritte' ? ' icon-montanara' : ''}${key==='Carta dei Vini' ? ' icon-vini' : ''}${key==='Distelleria' ? ' icon-distelleria' : ''}${key==='Cocktail' ? ' icon-cocktail' : ''}${key==='Taglieri' ? ' icon-taglieri' : ''}${key==='PASTA' ? ' icon-primi' : ''}${key==='SECONDI' ? ' icon-secondi' : ''}" src="${iconSrc}" alt="">` : ''}
+      ${iconSrc ? `<img class="section-card-icon${key==='bebidas' ? ' icon-bevande' : ''}${key==='antipasti' ? ' icon-large' : ''}${key==='postres' ? ' icon-large' : ''}${key==='pizze_fritte' ? ' icon-montanara' : ''}${key==='Carta dei Vini' ? ' icon-vini' : ''}${key==='Distelleria' ? ' icon-distelleria' : ''}${key==='Cocktail' ? ' icon-cocktail' : ''}${key==='Taglieri' ? ' icon-taglieri' : ''}${key==='PASTA' ? ' icon-primi' : ''}${key==='SECONDI' ? ' icon-secondi' : ''}" src="${iconSrc}"${iconSizeStyle} alt="">` : ''}
       <div class="label">${tr(sec.title)}</div>
     </button>`;
   });
