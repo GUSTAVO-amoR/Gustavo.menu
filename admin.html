@@ -118,6 +118,15 @@
   .subRow{display:flex;align-items:center;gap:8px;margin-top:8px;padding-left:14px;}
   .subRow input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13.5px;}
   .subKey{font-size:11px;color:var(--muted);margin-top:4px;}
+  .iconRow{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .catIconPreview{width:52px;height:52px;object-fit:contain;background:#f1efe9;border-radius:8px;border:1px solid var(--border);flex-shrink:0;}
+  .catIconPreview.empty{display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);text-align:center;}
+  .iconFileWrap{flex:1;min-width:170px;}
+  .iconFileWrap label,.iconSizeWrap label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;}
+  .iconFileWrap input[type=file]{font-size:12.5px;}
+  .iconRemoveBgLabel{display:flex;align-items:center;gap:6px;font-size:12.5px;white-space:nowrap;}
+  .iconSizeWrap{min-width:150px;}
+  .iconSizeWrap input[type=range]{width:100%;}
 
   /* ---------- Info tab ---------- */
   .infoCard{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;}
@@ -210,7 +219,7 @@ const PORTION_TYPES = [
 let state = {
   lang: 'it', tab: 'piatti', search: '',
   categories: [], subcategories: [], items: [], venue: null, banners: [],
-  drawerMode: null, drawerData: null, pendingPhotoFile: null
+  drawerMode: null, drawerData: null, pendingPhotoFile: null, pendingIconFiles: {}
 };
 
 function t(jsonb, lang){ if(!jsonb) return ''; return jsonb[lang||state.lang] || jsonb['it'] || Object.values(jsonb)[0] || ''; }
@@ -630,6 +639,21 @@ function renderCategorie(){
         <button class="miniBtn danger" data-act="catDel" data-id="${c.id}">Elimina categoria</button>
       </div>
       <div class="subKey">Chiave interna: ${esc(c.key)}</div>
+      <div class="iconRow" data-cat="${c.id}">
+        ${c.icon_url
+          ? `<img class="catIconPreview" data-role="iconPreview" data-id="${c.id}" src="${c.icon_url}">`
+          : `<div class="catIconPreview empty" data-role="iconPreview" data-id="${c.id}">nessuna icona</div>`}
+        <div class="iconFileWrap">
+          <label>Immagine icona</label>
+          <input type="file" accept="image/*" data-role="iconFile" data-id="${c.id}">
+        </div>
+        <label class="iconRemoveBgLabel"><input type="checkbox" data-role="iconRemoveBg" data-id="${c.id}" checked> Rimuovi sfondo</label>
+        <div class="iconSizeWrap">
+          <label>Dimensione: <span data-role="iconSizeLabel" data-id="${c.id}">${c.icon_display_size||64}px</span></label>
+          <input type="range" min="40" max="220" step="1" value="${c.icon_display_size||64}" data-role="iconSize" data-id="${c.id}">
+        </div>
+        <button class="miniBtn" data-act="iconSave" data-id="${c.id}">Salva icona</button>
+      </div>
       ${subs.map((s,si)=>`
         <div class="subRow" data-sub="${s.id}">
           <button class="arrowBtn" data-act="subUp" data-id="${s.id}" ${si===0?'disabled':''}>↑</button>
@@ -643,6 +667,26 @@ function renderCategorie(){
   }).join('') + `<button class="addRowBtn" data-act="catNew">+ Nuova categoria</button>`;
 
   root.querySelectorAll('[data-act]').forEach(b=> b.onclick = ()=> handleCatAction(b.dataset.act, b.dataset.id));
+
+  root.querySelectorAll('[data-role="iconFile"]').forEach(inp=> inp.onchange = (e)=>{
+    const id = inp.dataset.id;
+    const file = e.target.files[0];
+    if(!file) return;
+    state.pendingIconFiles[id] = file;
+    const preview = root.querySelector(`[data-role="iconPreview"][data-id="${id}"]`);
+    const url = URL.createObjectURL(file);
+    if(preview.tagName==='IMG'){ preview.src = url; }
+    else{
+      const img = document.createElement('img');
+      img.className = 'catIconPreview'; img.dataset.role='iconPreview'; img.dataset.id=id; img.src=url;
+      preview.replaceWith(img);
+    }
+  });
+  root.querySelectorAll('[data-role="iconSize"]').forEach(inp=> inp.oninput = (e)=>{
+    const id = inp.dataset.id;
+    const label = root.querySelector(`[data-role="iconSizeLabel"][data-id="${id}"]`);
+    if(label) label.textContent = e.target.value + 'px';
+  });
 }
 async function handleCatAction(act, id){
   const root = document.getElementById('tabCategorie');
@@ -685,7 +729,120 @@ async function handleCatAction(act, id){
     const siblings = state.subcategories.filter(x=>x.category_id===s.category_id);
     await swapOrder('subcategories', siblings, id, act==='subUp'?-1:1);
     await loadAll(); renderCategorie();
+  } else if(act==='iconSave'){
+    await saveCategoryIcon(id);
   }
+}
+
+/* ---------------- ICONA CATEGORIA (upload + rimozione sfondo + dimensione) ---------------- */
+function loadImageFromFile(file){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=> resolve(img);
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+// Rimuove lo sfondo campionando gli angoli dell'immagine, riempiendo per contiguità
+// (flood fill) dai bordi tutti i pixel simili al colore di sfondo, poi ritaglia
+// al riquadro del contenuto rimasto. Stesso principio della pipeline usata finora,
+// portato lato browser così l'operazione è ripetibile in autonomia.
+async function removeBackgroundToCanvas(file){
+  const img = await loadImageFromFile(file);
+  const srcCanvas = document.createElement('canvas');
+  srcCanvas.width = img.width; srcCanvas.height = img.height;
+  const sctx = srcCanvas.getContext('2d');
+  sctx.drawImage(img, 0, 0);
+  const imgData = sctx.getImageData(0, 0, srcCanvas.width, srcCanvas.height);
+  const { data, width, height } = imgData;
+
+  function colorAt(x, y){ const i=(y*width+x)*4; return [data[i],data[i+1],data[i+2]]; }
+  const patch = Math.max(4, Math.min(15, Math.floor(Math.min(width,height)*0.03)));
+  let sum=[0,0,0], count=0;
+  const corners = [[0,0],[width-patch,0],[0,height-patch],[width-patch,height-patch]];
+  corners.forEach(([cx,cy])=>{
+    for(let y=Math.max(0,cy); y<Math.min(height,cy+patch); y++){
+      for(let x=Math.max(0,cx); x<Math.min(width,cx+patch); x++){
+        const p = colorAt(x,y); sum[0]+=p[0]; sum[1]+=p[1]; sum[2]+=p[2]; count++;
+      }
+    }
+  });
+  const bg = [sum[0]/count, sum[1]/count, sum[2]/count];
+  const threshold = 34;
+
+  const visited = new Uint8Array(width*height);
+  const stack = [];
+  function tryVisit(x, y){
+    if(x<0||y<0||x>=width||y>=height) return;
+    const idx = y*width+x;
+    if(visited[idx]) return;
+    const i = idx*4;
+    const dist = Math.sqrt((data[i]-bg[0])**2 + (data[i+1]-bg[1])**2 + (data[i+2]-bg[2])**2);
+    if(dist < threshold){ visited[idx]=1; stack.push(idx); }
+  }
+  for(let x=0;x<width;x++){ tryVisit(x,0); tryVisit(x,height-1); }
+  for(let y=0;y<height;y++){ tryVisit(0,y); tryVisit(width-1,y); }
+  while(stack.length){
+    const idx = stack.pop();
+    const x = idx % width, y = (idx - x) / width;
+    tryVisit(x+1,y); tryVisit(x-1,y); tryVisit(x,y+1); tryVisit(x,y-1);
+  }
+  let minX=width, minY=height, maxX=0, maxY=0, hasContent=false;
+  for(let y=0;y<height;y++){
+    for(let x=0;x<width;x++){
+      const idx = y*width+x;
+      if(visited[idx]){ data[idx*4+3] = 0; }
+      else{
+        hasContent = true;
+        if(x<minX) minX=x; if(x>maxX) maxX=x;
+        if(y<minY) minY=y; if(y>maxY) maxY=y;
+      }
+    }
+  }
+  sctx.putImageData(imgData, 0, 0);
+  if(!hasContent){ return srcCanvas; }
+  const padding = Math.round(Math.max(maxX-minX, maxY-minY) * 0.04);
+  const cx0 = Math.max(0, minX-padding), cy0 = Math.max(0, minY-padding);
+  const cx1 = Math.min(width, maxX+1+padding), cy1 = Math.min(height, maxY+1+padding);
+  const cw = cx1-cx0, ch = cy1-cy0;
+  const cropped = document.createElement('canvas');
+  cropped.width = cw; cropped.height = ch;
+  cropped.getContext('2d').drawImage(srcCanvas, cx0, cy0, cw, ch, 0, 0, cw, ch);
+  return cropped;
+}
+async function saveCategoryIcon(id){
+  const root = document.getElementById('tabCategorie');
+  const c = state.categories.find(x=>x.id===id);
+  if(!c) return;
+  const sizeInput = root.querySelector(`[data-role="iconSize"][data-id="${id}"]`);
+  const size = parseInt(sizeInput.value, 10) || 64;
+  const removeBg = root.querySelector(`[data-role="iconRemoveBg"][data-id="${id}"]`).checked;
+  const file = state.pendingIconFiles[id];
+
+  let icon_url = c.icon_url;
+  if(file){
+    toast('Elaborazione immagine...');
+    let blob;
+    if(removeBg){
+      const canvas = await removeBackgroundToCanvas(file);
+      blob = await new Promise(res=> canvas.toBlob(res, 'image/png'));
+    } else {
+      blob = file;
+    }
+    const ext = removeBg ? 'png' : (file.name.split('.').pop() || 'png');
+    const path = `cat_icon_${id}_${Date.now()}.${ext}`;
+    const { error: upErr } = await sb.storage.from('menu-photos').upload(path, blob, { upsert:true, contentType: removeBg ? 'image/png' : (file.type||'image/png') });
+    if(upErr){ toast('Errore upload: ' + upErr.message); return; }
+    const { data: pub } = sb.storage.from('menu-photos').getPublicUrl(path);
+    icon_url = pub.publicUrl;
+  }
+
+  const { error } = await sb.from('categories').update({ icon_url, icon_display_size: size, icon_pos_x: 50, icon_pos_y: 50 }).eq('id', id);
+  if(error){ toast('Errore salvataggio: ' + error.message); return; }
+  delete state.pendingIconFiles[id];
+  await loadAll();
+  renderCategorie();
+  toast('Icona salvata');
 }
 function nextSortOrder(category_id, subcategory_id){
   const siblings = state.items.filter(x=> x.category_id===category_id && x.subcategory_id===subcategory_id);
